@@ -1,0 +1,88 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MultiTaskClicker.ViewModels"
+        x:Class="MultiTaskClicker.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Avalonia Multi-Task Auto Clicker" Width="920" Height="500">
+
+    <Grid RowDefinitions="Auto, Auto, *, Auto" Margin="10">
+        
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,15">
+            <Button Content="Tải cấu hình (Load)" Command="{Binding LoadConfigCommand}" Background="SteelBlue" Foreground="White"/>
+            <Button Content="Lưu cấu hình (Save)" Command="{Binding SaveConfigCommand}" Background="Teal" Foreground="White"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+            <TextBlock Text="Số lượng Task:" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding NumTasksInput}" Width="60"/>
+            <Button Content="Tạo danh sách mới" Command="{Binding GenerateTasksCommand}"/>
+            <Button Content="Thêm 1 Task" Command="{Binding AddTaskCommand}" Background="Gray" Foreground="White"/>
+            
+            <TextBlock Text="{Binding Tasks.Count, StringFormat='(Đang hiển thị: {0} task)'}" 
+                       Foreground="Red" 
+                       FontStyle="Italic" 
+                       VerticalAlignment="Center" 
+                       Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="2">
+            <ItemsControl ItemsSource="{Binding Tasks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Margin="10,3" Padding="8">
+                            <Grid ColumnDefinitions="Auto, Auto, 50, Auto, 50, Auto, 50, Auto, 50, Auto, Auto, Auto, Auto, Auto">
+                                
+                                <TextBlock Grid.Column="0" Text="{Binding TaskId, StringFormat='Task {0}:'}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                
+                                <TextBlock Grid.Column="1" Text="X:" VerticalAlignment="Center" Margin="13,0"/>
+                                <TextBox Grid.Column="2" Text="{Binding X}" IsEnabled="{Binding !IsRunning}"/>
+                                
+                                <TextBlock Grid.Column="3" Text="Y:" VerticalAlignment="Center" Margin="13,0"/>
+                                <TextBox Grid.Column="4" Text="{Binding Y}" IsEnabled="{Binding !IsRunning}"/>
+                                
+                                <Button Grid.Column="5" Content="{Binding BtnGetPosText}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).GetPositionCommand}" CommandParameter="{Binding}" IsEnabled="{Binding IsBtnGetPosEnabled}" Margin="5,0"/>
+                                
+                                <TextBox Grid.Column="6" Text="{Binding Clicks}" IsEnabled="{Binding !IsRunning}"/>
+                                <TextBlock Grid.Column="7" Text="lần mỗi" VerticalAlignment="Center" Margin="13,0"/>
+                                
+                                <TextBox Grid.Column="8" Text="{Binding Interval}" IsEnabled="{Binding !IsRunning}"/>
+                                <TextBlock Grid.Column="9" Text="giây" VerticalAlignment="Center" Margin="13,0"/>
+                                
+                                <CheckBox Grid.Column="10" Content="Ghost Click" IsChecked="{Binding IsGhost}" IsEnabled="{Binding !IsRunning}" Margin="5,0,0,0"/>
+                                
+                                <Button Grid.Column="11" Content="Reset" 
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ResetTaskCommand}" 
+                                        CommandParameter="{Binding}" 
+                                        IsEnabled="{Binding !IsRunning}"
+                                        Background="DarkOrange" Foreground="White" Margin="4,0"/>
+
+                                <Button Grid.Column="12" Content="Start" 
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StartTaskCommand}" 
+                                        CommandParameter="{Binding}" 
+                                        IsVisible="{Binding !IsRunning}"
+                                        Background="MediumSeaGreen" Foreground="White" Margin="4,0"/>
+
+                                <Button Grid.Column="12" Content="Stop" 
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StopTaskCommand}" 
+                                        CommandParameter="{Binding}" 
+                                        IsVisible="{Binding IsRunning}"
+                                        Background="Crimson" Foreground="White" Margin="4,0"/>
+
+                                <Button Grid.Column="13" Content="Xóa" 
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteTaskCommand}" 
+                                        CommandParameter="{Binding}" 
+                                        Background="DimGray" Foreground="White" Margin="4,0"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20" Margin="0,10,0,0">
+            <Button Content="Bắt đầu chạy tất cả (Alt + S)" Background="Green" Foreground="White" Width="220" HorizontalContentAlignment="Center" Command="{Binding StartClickingCommand}" IsEnabled="{Binding !IsGlobalRunning}"/>
+            <Button Content="Dừng lại tất cả (Q)" Background="Red" Foreground="White" Width="220" HorizontalContentAlignment="Center" Command="{Binding StopAllTasksCommand}" IsEnabled="{Binding IsGlobalRunning}"/>
+        </StackPanel>
+        
+    </Grid>
+</Window>

@@ -1,0 +1,72 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ClickSpeedTest.ViewModels"
+        x:Class="ClickSpeedTest.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Mouse Click Speed Test" Width="500" Height="450"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid RowDefinitions="Auto, Auto, *" Margin="20">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15" HorizontalAlignment="Center" Margin="0,0,0,15">
+            <TextBlock Text="Chọn thời gian đo:" VerticalAlignment="Center" FontSize="14"/>
+            
+            <ComboBox ItemsSource="{Binding DurationOptions}" 
+                      SelectedItem="{Binding SelectedDuration}" 
+                      IsEnabled="{Binding !IsTesting}" 
+                      Width="80"/>
+            
+            <TextBlock Text="giây" VerticalAlignment="Center" FontSize="14"/>
+            
+            <Button Content="Chơi Lại (Reset)" 
+                    Command="{Binding ResetTestCommand}" 
+                    Background="OrangeRed" Foreground="White" 
+                    Padding="10,5"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*, *, *" Margin="0,10,0,20">
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                <TextBlock Text="Thời gian" Foreground="Gray" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding TimeLeft, StringFormat='{}{0:0.0}s'}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                <TextBlock Text="Số lần Click" Foreground="Gray" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding ClickCount}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                <TextBlock Text="Tốc độ (CPS)" Foreground="Gray" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding Cps}" FontSize="24" FontWeight="Bold" Foreground="MediumSeaGreen" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <Button Grid.Row="2" 
+                Command="{Binding RegisterClickCommand}"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                Background="CadetBlue" BorderBrush="#B0BEC5" BorderThickness="2" CornerRadius="12">
+            
+            <Button.Content>
+                <StackPanel Spacing="10">
+                    <TextBlock Text="CLICK VÀO ĐÂY ĐỂ BẮT ĐẦU TEST!" 
+                               FontSize="18" FontWeight="Bold" Foreground="#37474F"
+                               HorizontalAlignment="Center"
+                               IsVisible="{Binding IsReady}"/>
+                    
+                    <TextBlock Text="SPAM CLICK LIÊN TỤC!!!" 
+                               FontSize="22" FontWeight="Black" Foreground="Crimson"
+                               HorizontalAlignment="Center"
+                               IsVisible="{Binding IsTesting}"/>
+                    
+                    <TextBlock Text="HẾT GIỜ!" 
+                               FontSize="24" FontWeight="Black" Foreground="DarkSlateGray"
+                               HorizontalAlignment="Center"
+                               IsVisible="{Binding IsFinished}"/>
+                    <TextBlock Text="{Binding Cps, StringFormat='Kết quả của bạn: {0} CPS'}" 
+                               FontSize="16" HorizontalAlignment="Center"
+                               IsVisible="{Binding IsFinished}"/>
+                </StackPanel>
+            </Button.Content>
+        </Button>
+    </Grid>
+</Window>
