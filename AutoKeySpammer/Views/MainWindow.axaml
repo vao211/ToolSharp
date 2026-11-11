@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:AutoKeySpammer.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:global="clr-namespace:"
+        mc:Ignorable="d" d:Width="360" d:Height="380"
+        Width="360" Height="380"
+        x:Class="AutoKeySpammer.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Auto Key Spammer"
+        Icon="/Assets/icon.ico"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto" Margin="24" RowSpacing="16">
+        
+        <!-- Nút chọn phím -->
+        <Button Grid.Row="0" 
+                Content="{Binding SelectButtonText}"
+                Command="{Binding SelectKeyCommand}"
+                HorizontalAlignment="Stretch" 
+                HorizontalContentAlignment="Center"
+                Padding="10"/>
+
+        <!-- CPS -->
+        <StackPanel Grid.Row="1" Spacing="4">
+            <TextBlock Text="Số lần bấm / giây (CPS):" HorizontalAlignment="Center"/>
+            <TextBox Text="{Binding Cps}" HorizontalAlignment="Center" Width="200" TextAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Tổng số lần -->
+        <StackPanel Grid.Row="2" Spacing="4">
+            <TextBlock Text="Tổng số lần cần bấm:" HorizontalAlignment="Center"/>
+            <TextBox Text="{Binding TotalClicks}" 
+                     IsEnabled="{Binding !IsInfinite}"
+                     HorizontalAlignment="Center" Width="200" TextAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Checkbox không ngừng -->
+        <CheckBox Grid.Row="3" 
+                  Content="Bấm không ngừng" 
+                  IsChecked="{Binding IsInfinite}" 
+                  HorizontalAlignment="Center"/>
+
+        <!-- Nút Bắt đầu / Dừng -->
+        <Grid Grid.Row="4" ColumnDefinitions="*, *" ColumnSpacing="12" Margin="0, 8, 0, 0">
+            <Button Grid.Column="0" 
+                    Content="Bắt đầu" 
+                    Command="{Binding StartCommand}"
+                    Background="#4CAF50" Foreground="White"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8"/>
+            
+            <Button Grid.Column="1" 
+                    Content="Dừng (ESC)" 
+                    Command="{Binding StopCommand}"
+                    Background="#F44336" Foreground="White"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8"/>
+        </Grid>
+    </Grid>
+</Window>
