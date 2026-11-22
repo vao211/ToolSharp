@@ -9,7 +9,10 @@ namespace CodePacker.Views;
 
 public partial class MainWindow : Window
 {
-   public MainWindow() => InitializeComponent();
+   public MainWindow()
+   {
+      InitializeComponent();
+   }
 
    private async void PickSourceFolder_Click(object? sender, RoutedEventArgs e)
    {
@@ -33,5 +36,4 @@ public partial class MainWindow : Window
       });
       return folders.FirstOrDefault()?.TryGetLocalPath();
    }
-   
 }

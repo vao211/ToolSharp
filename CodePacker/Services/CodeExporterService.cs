@@ -15,241 +15,253 @@ public record ExportResult(int FileCount, string OutputFullPath);
 
 public static class CodeExporterService
 {
-    private static readonly string[] PriorityRootFiles =
-    [
-        "readme.md", "dockerfile", "docker-compose.yml",
-        "package.json", "tsconfig.json", "program.cs", "main.py", "index.ts", "index.js"
-    ];
+   private static readonly string[] PriorityRootFiles =
+   [
+      "readme.md", "dockerfile", "docker-compose.yml",
+      "package.json", "tsconfig.json", "program.cs", "main.py", "index.ts", "index.js"
+   ];
 
-    public static async Task<ExportResult> ExportAsync(
-        string sourceDir,
-        string outputFullPath,
-        OutputFormat format,
-        IEnumerable<string> excludedExtensions,
-        IEnumerable<string> excludedNames,
-        bool skipBinary,
-        CancellationToken ct = default)
-    {
-        var extSet = new HashSet<string>(
-            excludedExtensions.Select(NormalizeExt),
-            StringComparer.OrdinalIgnoreCase);
+   public static async Task<ExportResult> ExportAsync(
+      string sourceDir,
+      string outputFullPath,
+      OutputFormat format,
+      IEnumerable<string> excludedExtensions,
+      IEnumerable<string> excludedNames,
+      bool skipBinary,
+      CancellationToken ct = default)
+   {
+      var extSet = new HashSet<string>(
+         excludedExtensions.Select(NormalizeExt),
+         StringComparer.OrdinalIgnoreCase);
 
-        var nameSet = new HashSet<string>(excludedNames, StringComparer.OrdinalIgnoreCase);
-        var outDir = Path.GetDirectoryName(outputFullPath) ?? sourceDir;
-        var outFile = OutputFormatExtensions.EnsureExtension(Path.GetFileName(outputFullPath), format);
-        var normalizedOutput = Path.GetFullPath(Path.Combine(outDir, outFile));
-        var files = new List<string>();
-        CollectFiles(sourceDir, normalizedOutput, extSet, nameSet, skipBinary, files, ct);
+      var nameSet = new HashSet<string>(excludedNames, StringComparer.OrdinalIgnoreCase);
+      var outDir = Path.GetDirectoryName(outputFullPath) ?? sourceDir;
+      var outFile = OutputFormatExtensions.EnsureExtension(Path.GetFileName(outputFullPath), format);
+      var normalizedOutput = Path.GetFullPath(Path.Combine(outDir, outFile));
+      var files = new List<string>();
+      CollectFiles(sourceDir, normalizedOutput, extSet, nameSet, skipBinary, files, ct);
 
-        var sortedFiles = files
-            .Select(full => new
-            {
-                FullPath = full,
-                RelPath = Path.GetRelativePath(sourceDir, full).Replace('\\', '/')
-            })
-            .OrderBy(f => GetSortPriority(f.RelPath))
-            .ThenBy(f => Path.GetDirectoryName(f.RelPath)?.Replace('\\', '/') ?? "", StringComparer.OrdinalIgnoreCase)
-            .ThenBy(f => Path.GetFileName(f.RelPath), StringComparer.OrdinalIgnoreCase)
-            .ToList();
+      var sortedFiles = files
+         .Select(full => new
+         {
+            FullPath = full,
+            RelPath = Path.GetRelativePath(sourceDir, full).Replace('\\', '/')
+         })
+         .OrderBy(f => GetSortPriority(f.RelPath))
+         .ThenBy(f => Path.GetDirectoryName(f.RelPath)?.Replace('\\', '/') ?? "", StringComparer.OrdinalIgnoreCase)
+         .ThenBy(f => Path.GetFileName(f.RelPath), StringComparer.OrdinalIgnoreCase)
+         .ToList();
 
-        var tree = BuildDirectoryTree(Path.GetFileName(sourceDir.TrimEnd('\\', '/')), sortedFiles.Select(f => f.RelPath));
+      var tree = BuildDirectoryTree(Path.GetFileName(sourceDir.TrimEnd('\\', '/')), sortedFiles.Select(f => f.RelPath));
 
-        Directory.CreateDirectory(Path.GetDirectoryName(normalizedOutput)!);
-        var sb = new StringBuilder();
+      Directory.CreateDirectory(Path.GetDirectoryName(normalizedOutput)!);
+      var sb = new StringBuilder();
 
-        if (format == OutputFormat.Json)
-        {
-            var items = new List<object>();
-            foreach (var f in sortedFiles)
-            {
-                ct.ThrowIfCancellationRequested();
-                var content = await File.ReadAllTextAsync(f.FullPath, ct);
-                items.Add(new { path = f.RelPath, lines = content.Split('\n').Length, content });
-            }
-
-            var payload = new
-            {
-                project = Path.GetFileName(sourceDir),
-                exportedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                totalFiles = sortedFiles.Count,
-                tree,
-                files = items
-            };
-            await File.WriteAllTextAsync(normalizedOutput, JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }), Encoding.UTF8, ct);
-            return new ExportResult(sortedFiles.Count, normalizedOutput);
-        }
-
-        WriteHeader(sb, format, Path.GetFileName(sourceDir), sortedFiles.Count, tree);
-
-        foreach (var f in sortedFiles)
-        {
+      if (format == OutputFormat.Json)
+      {
+         var items = new List<object>();
+         foreach (var f in sortedFiles)
+         {
             ct.ThrowIfCancellationRequested();
             var content = await File.ReadAllTextAsync(f.FullPath, ct);
-            AppendFileBlock(sb, format, f.RelPath, content);
-        }
+            items.Add(new { path = f.RelPath, lines = content.Split('\n').Length, content });
+         }
 
-        if (format == OutputFormat.Xml)
-            sb.AppendLine("</project>");
+         var payload = new
+         {
+            project = Path.GetFileName(sourceDir),
+            exportedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            totalFiles = sortedFiles.Count,
+            tree,
+            files = items
+         };
+         await File.WriteAllTextAsync(normalizedOutput,
+            JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }), Encoding.UTF8, ct);
+         return new ExportResult(sortedFiles.Count, normalizedOutput);
+      }
 
-        await File.WriteAllTextAsync(normalizedOutput, sb.ToString(), new UTF8Encoding(false), ct);
-        return new ExportResult(sortedFiles.Count, normalizedOutput);
-    }
+      WriteHeader(sb, format, Path.GetFileName(sourceDir), sortedFiles.Count, tree);
 
-    private static void CollectFiles(
-        string currentDir,
-        string outputFullPath,
-        HashSet<string> extSet,
-        HashSet<string> nameSet,
-        bool skipBinary,
-        List<string> results,
-        CancellationToken ct)
-    {
-        ct.ThrowIfCancellationRequested();
+      foreach (var f in sortedFiles)
+      {
+         ct.ThrowIfCancellationRequested();
+         var content = await File.ReadAllTextAsync(f.FullPath, ct);
+         AppendFileBlock(sb, format, f.RelPath, content);
+      }
 
-        try
-        {
-            foreach (var file in Directory.EnumerateFiles(currentDir))
-            {
-                if (string.Equals(Path.GetFullPath(file), outputFullPath, StringComparison.OrdinalIgnoreCase))
-                    continue;
+      if (format == OutputFormat.Xml)
+         sb.AppendLine("</project>");
 
-                var fileName = Path.GetFileName(file);
-                var ext = Path.GetExtension(file);
+      await File.WriteAllTextAsync(normalizedOutput, sb.ToString(), new UTF8Encoding(false), ct);
+      return new ExportResult(sortedFiles.Count, normalizedOutput);
+   }
 
-                if (nameSet.Contains(fileName) || (!string.IsNullOrEmpty(ext) && extSet.Contains(ext)))
-                    continue;
+   private static void CollectFiles(
+      string currentDir,
+      string outputFullPath,
+      HashSet<string> extSet,
+      HashSet<string> nameSet,
+      bool skipBinary,
+      List<string> results,
+      CancellationToken ct)
+   {
+      ct.ThrowIfCancellationRequested();
 
-                if (skipBinary && IsBinaryFile(file))
-                    continue;
+      try
+      {
+         foreach (var file in Directory.EnumerateFiles(currentDir))
+         {
+            if (string.Equals(Path.GetFullPath(file), outputFullPath, StringComparison.OrdinalIgnoreCase))
+               continue;
 
-                results.Add(file);
-            }
+            var fileName = Path.GetFileName(file);
+            var ext = Path.GetExtension(file);
 
-            foreach (var dir in Directory.EnumerateDirectories(currentDir))
-            {
-                var dirName = Path.GetFileName(dir);
-                if (nameSet.Contains(dirName))
-                    continue;
+            if (nameSet.Contains(fileName) || (!string.IsNullOrEmpty(ext) && extSet.Contains(ext)))
+               continue;
 
-                CollectFiles(dir, outputFullPath, extSet, nameSet, skipBinary, results, ct);
-            }
-        }
-        catch (UnauthorizedAccessException) { }
-    }
+            if (skipBinary && IsBinaryFile(file))
+               continue;
 
-    private static int GetSortPriority(string relPath)
-    {
-        bool isRoot = !relPath.Contains('/');
-        if (!isRoot) return 3;
+            results.Add(file);
+         }
 
-        var lower = relPath.ToLowerInvariant();
-        if (lower.EndsWith(".sln") || lower.EndsWith(".csproj") || Enumerable.Contains(PriorityRootFiles, lower))
-            return 1;
+         foreach (var dir in Directory.EnumerateDirectories(currentDir))
+         {
+            var dirName = Path.GetFileName(dir);
+            if (nameSet.Contains(dirName))
+               continue;
 
-        return 2;
-    }
+            CollectFiles(dir, outputFullPath, extSet, nameSet, skipBinary, results, ct);
+         }
+      }
+      catch (UnauthorizedAccessException)
+      {
+      }
+   }
 
-    private static bool IsBinaryFile(string path)
-    {
-        try
-        {
-            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            byte[] buffer = new byte[4096];
-            int read = fs.Read(buffer, 0, buffer.Length);
-            for (int i = 0; i < read; i++)
-                if (buffer[i] == 0) return true;
-            return false;
-        }
-        catch { return true; }
-    }
+   private static int GetSortPriority(string relPath)
+   {
+      var isRoot = !relPath.Contains('/');
+      if (!isRoot) return 3;
 
-    private static string NormalizeExt(string ext)
-    {
-        ext = ext.Trim();
-        return ext.StartsWith('.') ? ext : "." + ext;
-    }
+      var lower = relPath.ToLowerInvariant();
+      if (lower.EndsWith(".sln") || lower.EndsWith(".csproj") || Enumerable.Contains(PriorityRootFiles, lower))
+         return 1;
 
-    private static string BuildDirectoryTree(string rootName, IEnumerable<string> relPaths)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine($"{rootName}/");
-        foreach (var p in relPaths)
-        {
-            var depth = p.Count(c => c == '/');
-            var indent = new string(' ', depth * 2);
-            sb.AppendLine($"{indent}├── {p}");
-        }
-        return sb.ToString();
-    }
+      return 2;
+   }
 
-    private static void WriteHeader(StringBuilder sb, OutputFormat format, string projectName, int count, string tree)
-    {
-        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        switch (format)
-        {
-            case OutputFormat.Markdown:
-                sb.AppendLine($"# Project: {projectName}");
-                sb.AppendLine($"> Exported: {now} | Total files: {count}\n");
-                sb.AppendLine("## Directory Structure");
-                sb.AppendLine("```text");
-                sb.Append(tree);
-                sb.AppendLine("```\n");
-                break;
+   private static bool IsBinaryFile(string path)
+   {
+      try
+      {
+         using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+         var buffer = new byte[4096];
+         var read = fs.Read(buffer, 0, buffer.Length);
+         for (var i = 0; i < read; i++)
+            if (buffer[i] == 0)
+               return true;
+         return false;
+      }
+      catch
+      {
+         return true;
+      }
+   }
 
-            case OutputFormat.Xml:
-                sb.AppendLine($"<project name=\"{SecurityElement.Escape(projectName)}\" exported=\"{now}\" files=\"{count}\">");
-                sb.AppendLine("<directory_tree>");
-                sb.Append(SecurityElement.Escape(tree));
-                sb.AppendLine("</directory_tree>");
-                break;
+   private static string NormalizeExt(string ext)
+   {
+      ext = ext.Trim();
+      return ext.StartsWith('.') ? ext : "." + ext;
+   }
 
-            case OutputFormat.PlainText:
-                sb.AppendLine($"=== PROJECT: {projectName} | EXPORTED: {now} | FILES: {count} ===");
-                sb.AppendLine(tree);
-                break;
-        }
-    }
+   private static string BuildDirectoryTree(string rootName, IEnumerable<string> relPaths)
+   {
+      var sb = new StringBuilder();
+      sb.AppendLine($"{rootName}/");
+      foreach (var p in relPaths)
+      {
+         var depth = p.Count(c => c == '/');
+         var indent = new string(' ', depth * 2);
+         sb.AppendLine($"{indent}├── {p}");
+      }
 
-    private static void AppendFileBlock(StringBuilder sb, OutputFormat format, string relPath, string content)
-    {
-        switch (format)
-        {
-            case OutputFormat.Markdown:
-                var lang = GetMarkdownLang(Path.GetExtension(relPath));
-                sb.AppendLine($"## `{relPath}`");
-                sb.AppendLine($"````{lang}");
-                sb.AppendLine(content.TrimEnd());
-                sb.AppendLine("````\n");
-                break;
+      return sb.ToString();
+   }
 
-            case OutputFormat.Xml:
-                sb.AppendLine($"<file path=\"{SecurityElement.Escape(relPath)}\"><![CDATA[");
-                sb.AppendLine(content.Replace("]]>", "]]]]><![CDATA[>").TrimEnd());
-                sb.AppendLine("]]></file>");
-                break;
+   private static void WriteHeader(StringBuilder sb, OutputFormat format, string projectName, int count, string tree)
+   {
+      var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+      switch (format)
+      {
+         case OutputFormat.Markdown:
+            sb.AppendLine($"# Project: {projectName}");
+            sb.AppendLine($"> Exported: {now} | Total files: {count}\n");
+            sb.AppendLine("## Directory Structure");
+            sb.AppendLine("```text");
+            sb.Append(tree);
+            sb.AppendLine("```\n");
+            break;
 
-            case OutputFormat.PlainText:
-                sb.AppendLine($"--- FILE: {relPath} ---");
-                sb.AppendLine(content.TrimEnd());
-                sb.AppendLine();
-                break;
-        }
-    }
+         case OutputFormat.Xml:
+            sb.AppendLine(
+               $"<project name=\"{SecurityElement.Escape(projectName)}\" exported=\"{now}\" files=\"{count}\">");
+            sb.AppendLine("<directory_tree>");
+            sb.Append(SecurityElement.Escape(tree));
+            sb.AppendLine("</directory_tree>");
+            break;
 
-    private static string GetMarkdownLang(string ext) => ext.ToLowerInvariant() switch
-    {
-        ".cs" => "csharp",
-        ".axaml" or ".xaml" or ".xml" or ".csproj" => "xml",
-        ".js" => "javascript",
-        ".ts" => "typescript",
-        ".py" => "python",
-        ".json" => "json",
-        ".html" => "html",
-        ".css" => "css",
-        ".sql" => "sql",
-        ".sh" => "bash",
-        ".ps1" => "powershell",
-        ".md" => "markdown",
-        _ => ""
-    };
+         case OutputFormat.PlainText:
+            sb.AppendLine($"=== PROJECT: {projectName} | EXPORTED: {now} | FILES: {count} ===");
+            sb.AppendLine(tree);
+            break;
+      }
+   }
+
+   private static void AppendFileBlock(StringBuilder sb, OutputFormat format, string relPath, string content)
+   {
+      switch (format)
+      {
+         case OutputFormat.Markdown:
+            var lang = GetMarkdownLang(Path.GetExtension(relPath));
+            sb.AppendLine($"## `{relPath}`");
+            sb.AppendLine($"````{lang}");
+            sb.AppendLine(content.TrimEnd());
+            sb.AppendLine("````\n");
+            break;
+
+         case OutputFormat.Xml:
+            sb.AppendLine($"<file path=\"{SecurityElement.Escape(relPath)}\"><![CDATA[");
+            sb.AppendLine(content.Replace("]]>", "]]]]><![CDATA[>").TrimEnd());
+            sb.AppendLine("]]></file>");
+            break;
+
+         case OutputFormat.PlainText:
+            sb.AppendLine($"--- FILE: {relPath} ---");
+            sb.AppendLine(content.TrimEnd());
+            sb.AppendLine();
+            break;
+      }
+   }
+
+   private static string GetMarkdownLang(string ext)
+   {
+      return ext.ToLowerInvariant() switch
+      {
+         ".cs" => "csharp",
+         ".axaml" or ".xaml" or ".xml" or ".csproj" => "xml",
+         ".js" => "javascript",
+         ".ts" => "typescript",
+         ".py" => "python",
+         ".json" => "json",
+         ".html" => "html",
+         ".css" => "css",
+         ".sql" => "sql",
+         ".sh" => "bash",
+         ".ps1" => "powershell",
+         ".md" => "markdown",
+         _ => ""
+      };
+   }
 }

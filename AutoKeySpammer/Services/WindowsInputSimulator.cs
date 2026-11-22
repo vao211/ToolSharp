@@ -5,20 +5,14 @@ namespace AutoKeySpammer.Services;
 
 public class WindowsInputSimulator : IInputSimulator
 {
-   [DllImport("user32.dll")]
-   private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
-
-   [DllImport("user32.dll")]
-   private static extern uint MapVirtualKey(uint uCode, uint uMapType);
-
    private const uint KEYEVENTF_KEYUP = 0x0002;
 
    public void ClickKey(string keyName)
    {
-      byte vk = GetVirtualKeyCode(keyName);
+      var vk = GetVirtualKeyCode(keyName);
       if (vk != 0)
       {
-         byte scanCode = (byte)MapVirtualKey(vk, 0);
+         var scanCode = (byte)MapVirtualKey(vk, 0);
 
          keybd_event(vk, scanCode, 0, 0);
          keybd_event(vk, scanCode, KEYEVENTF_KEYUP, 0);
@@ -29,17 +23,20 @@ public class WindowsInputSimulator : IInputSimulator
       }
    }
 
+   [DllImport("user32.dll")]
+   private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
+   [DllImport("user32.dll")]
+   private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
    private byte GetVirtualKeyCode(string key)
    {
       if (string.IsNullOrEmpty(key)) return 0;
 
       if (key.Length == 1)
       {
-         char c = char.ToUpper(key[0]);
-         if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
-         {
-            return (byte)c;
-         }
+         var c = char.ToUpper(key[0]);
+         if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) return (byte)c;
       }
 
       return key.ToUpper() switch
