@@ -6,5 +6,5 @@ public class FileSystemItemInfo
    public string FullPath { get; set; } = string.Empty;
    public long SizeInBytes { get; set; }
    public DateTime CreatedDate { get; set; }
-   public bool IsDirectory { get; set; }  
+   public bool IsDirectory { get; set; }
 }

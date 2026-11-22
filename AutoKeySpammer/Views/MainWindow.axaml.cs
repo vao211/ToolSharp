@@ -1,7 +1,7 @@
-using Avalonia.Controls;
-using Avalonia.Input;
 using System.Windows.Input;
 using AutoKeySpammer.ViewModels;
+using Avalonia.Controls;
+using Avalonia.Input;
 
 namespace AutoKeySpammer.Views;
 
@@ -10,7 +10,7 @@ public partial class MainWindow : Window
    public MainWindow()
    {
       InitializeComponent();
-      this.KeyDown += OnWindowKeyDown;
+      KeyDown += OnWindowKeyDown;
    }
 
    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
@@ -27,10 +27,7 @@ public partial class MainWindow : Window
          if (e.Key == Key.Escape)
          {
             ICommand stopCmd = vm.StopCommand;
-            if (stopCmd.CanExecute(null))
-            {
-               stopCmd.Execute(null);
-            }
+            if (stopCmd.CanExecute(null)) stopCmd.Execute(null);
          }
       }
    }

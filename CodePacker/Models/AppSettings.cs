@@ -15,13 +15,14 @@ public enum OutputFormat
 
 public class AppSettings
 {
+   private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };
    public string DefaultOutputFileName { get; set; } = "project_code";
    public OutputFormat DefaultFormat { get; set; } = OutputFormat.Markdown;
    public bool SkipBinaryFiles { get; set; } = true;
    public bool IsDarkMode { get; set; } = true;
    public string LanguageFile { get; set; } = "vi_vn.json";
    public string? LastRegisteredPath { get; set; }
-   
+
    public bool SyncOutputFolderWithSource { get; set; } = true;
 
    public List<string> ExcludedExtensions { get; set; } =
@@ -40,7 +41,6 @@ public class AppSettings
    ];
 
    private static string SettingsFilePath => Path.Combine(AppContext.BaseDirectory, "setting.json");
-   private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };
 
    public static AppSettings Load()
    {
@@ -52,7 +52,9 @@ public class AppSettings
             return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
          }
       }
-      catch { }
+      catch
+      {
+      }
 
       var defaults = new AppSettings();
       defaults.Save();
@@ -64,5 +66,4 @@ public class AppSettings
       var json = JsonSerializer.Serialize(this, JsonOpts);
       File.WriteAllText(SettingsFilePath, json);
    }
-   
 }
