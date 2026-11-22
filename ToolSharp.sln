@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClickSpeedTest", "ClickSpee
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoKeySpammer", "AutoKeySpammer\AutoKeySpammer.csproj", "{3C8AF48D-E323-4380-AF71-39726967A7A0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodePacker", "CodePacker\CodePacker.csproj", "{57B99963-14B1-4345-94D4-C135742DB0B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{3C8AF48D-E323-4380-AF71-39726967A7A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C8AF48D-E323-4380-AF71-39726967A7A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C8AF48D-E323-4380-AF71-39726967A7A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57B99963-14B1-4345-94D4-C135742DB0B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57B99963-14B1-4345-94D4-C135742DB0B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57B99963-14B1-4345-94D4-C135742DB0B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57B99963-14B1-4345-94D4-C135742DB0B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,122 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CodePacker.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="CodePacker.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/icon.ico"
+        Title="CodePacker">
+
+<DockPanel Margin="16">
+    <!-- Thanh trạng thái ở đáy -->
+    <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" CornerRadius="6" DockPanel.Dock="Bottom" Margin="0,12,0,0" Padding="10,8">
+      <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"/>
+    </Border>
+    
+    <TabControl>
+      <!-- TAB 1: XUẤT CODE -->
+      <TabItem Header="{Binding Loc[TabExport]}">
+        <StackPanel Margin="0,14,0,0" Spacing="12">
+          <TextBlock FontWeight="SemiBold" Text="{Binding Loc[SourceFolder]}"/>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding SourceFolder}"/>
+            <Button Click="PickSourceFolder_Click" Content="{Binding Loc[Browse]}" Grid.Column="1"/>
+          </Grid>
+
+          <TextBlock FontWeight="SemiBold" Text="{Binding Loc[OutputFolder]}"/>
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">           
+            <TextBox Text="{Binding OutputFolder}"/>
+            <Button Click="PickOutputFolder_Click" Content="{Binding Loc[Browse]}" Grid.Column="1"/>
+            <Button Command="{Binding OpenOutputFolderCommand}" Content="{Binding Loc[OpenFolder]}" Grid.Column="2"/>
+          </Grid>
+
+          <Grid ColumnDefinitions="2*,*" ColumnSpacing="12">
+            <StackPanel Spacing="6">
+              <TextBlock FontWeight="SemiBold" Text="{Binding Loc[OutputFileName]}"/>
+              <TextBox Text="{Binding OutputFileName}">
+                <TextBox.InnerRightContent>
+                  <TextBlock FontWeight="SemiBold" Margin="0,0,10,0" Opacity="0.55" Text="{Binding SuffixExtension}" VerticalAlignment="Center"/>
+                </TextBox.InnerRightContent>
+              </TextBox>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="6">
+              <TextBlock FontWeight="SemiBold" Text="{Binding Loc[OutputFormat]}"/>
+              <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding AvailableFormats}" SelectedItem="{Binding SelectedFormat}"/>
+            </StackPanel>
+          </Grid>
+
+          <CheckBox Content="{Binding Loc[SkipBinary]}" IsChecked="{Binding SkipBinaryFiles}"/>
+
+          <Button Classes="accent" Command="{Binding ExportCommand}"
+                  Content="{Binding Loc[BtnExport]}"
+                  FontWeight="Bold" 
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  IsEnabled="{Binding !IsBusy}" 
+                  Margin="0,8,0,0" Padding="0,12"/>
+        </StackPanel>
+      </TabItem>
+
+      <!-- TAB 2: DANH SÁCH MIỄN TRỪ -->
+      <TabItem Header="{Binding Loc[TabFilters]}">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="16" Margin="0,14,0,0">
+          <!-- Cột 1: Đuôi file -->
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,8" Text="{Binding Loc[ExcludedExtTitle]}"/>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" DockPanel.Dock="Bottom" Margin="0,8,0,0">
+              <TextBox Text="{Binding NewExtension}" Watermark=".log"/>
+              <Button Command="{Binding AddExtensionCommand}" Content="{Binding Loc[Add]}" Grid.Column="1"/>
+              <Button Command="{Binding RemoveExtensionCommand}" Content="{Binding Loc[Remove]}" Grid.Column="2"/>
+            </Grid>
+            <ListBox ItemsSource="{Binding ExcludedExtensions}" SelectedItem="{Binding SelectedExtension}"/>
+          </DockPanel>
+
+          <!-- Cột 2: Tên file / thư mục -->
+          <DockPanel Grid.Column="1">
+            <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,8" Text="{Binding Loc[ExcludedNameTitle]}"/>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" DockPanel.Dock="Bottom" Margin="0,8,0,0">
+              <TextBox Text="{Binding NewName}" Watermark="node_modules"/>
+              <Button Command="{Binding AddExcludedNameCommand}" Content="{Binding Loc[Add]}" Grid.Column="1"/>
+              <Button Command="{Binding RemoveExcludedNameCommand}" Content="{Binding Loc[Remove]}" Grid.Column="2"/>
+            </Grid>
+            <ListBox ItemsSource="{Binding ExcludedNames}" SelectedItem="{Binding SelectedName}"/>
+          </DockPanel>
+        </Grid>
+      </TabItem>
+
+      <!-- TAB 3: CÀI ĐẶT & PATH -->
+      <TabItem Header="{Binding Loc[TabSettings]}">
+        <StackPanel Margin="0,14,0,0" Spacing="14">
+          <TextBlock FontWeight="SemiBold" Text="{Binding Loc[Language]}"/>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding DisplayName}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Command="{Binding ReloadLanguagesCommand}" Content="{Binding Loc[ReloadLang]}" Grid.Column="1"/>
+          </Grid>
+
+          <ToggleSwitch Content="{Binding Loc[DarkMode]}" IsChecked="{Binding IsDarkMode}"/>
+          <ToggleSwitch Content="{Binding Loc[SyncOutputFolder]}" IsChecked="{Binding SyncOutputFolderWithSource}"/>
+          <StackPanel Spacing="6">
+            <TextBlock FontWeight="SemiBold" Text="{Binding Loc[DefaultFileName]}"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox Text="{Binding DefaultFileName}"/>
+              <Button Command="{Binding SaveSettingsCommand}" Content="{Binding Loc[BtnSaveSettings]}" Grid.Column="1"/>
+            </Grid>
+          </StackPanel>
+
+          <Separator Margin="0,4"/>
+
+          <TextBlock FontWeight="SemiBold" Text="{Binding Loc[PathSection]}"/>
+          <Button Command="{Binding RegisterPathCommand}" Content="{Binding Loc[BtnAddPath]}" HorizontalAlignment="Left"/>
+        </StackPanel>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>
