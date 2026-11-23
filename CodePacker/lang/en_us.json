@@ -29,5 +29,7 @@
   "PathExists": "Application is already registered in PATH at the current location.",
   "SyncOutputFolder": "Auto-sync output folder with scan folder",
   "OpenFolder": "Open folder",
-  "FolderNotFound": "Folder does not exist: {0}"
+  "FolderNotFound": "Folder does not exist: {0}",
+  "ExportByModule": "Export each module (folder) as a separate file",
+  "StatusDoneModules": "Done! Exported {0} source files into {1} module files at: {2}"
 }

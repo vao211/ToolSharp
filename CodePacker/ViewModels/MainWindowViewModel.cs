@@ -15,6 +15,7 @@ namespace CodePacker.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {
+   [ObservableProperty] private bool _exportByModule;
    private readonly AppSettings _settings;
    [ObservableProperty] private string _defaultFileName = "project_code";
    [ObservableProperty] private bool _isBusy;
@@ -59,6 +60,7 @@ public partial class MainWindowViewModel : ObservableObject
       SelectedFormat = _settings.DefaultFormat;
       SkipBinaryFiles = _settings.SkipBinaryFiles;
       IsDarkMode = _settings.IsDarkMode;
+      _exportByModule = _settings.ExportByModule;
 
       _syncOutputFolderWithSource = _settings.SyncOutputFolderWithSource;
 
@@ -76,6 +78,7 @@ public partial class MainWindowViewModel : ObservableObject
 
    public string FinalOutputFileName =>
       OutputFormatExtensions.EnsureExtension(OutputFileName, SelectedFormat);
+   partial void OnExportByModuleChanged(bool value) => SaveSettings();
 
    public string SuffixExtension
    {
@@ -188,6 +191,7 @@ public partial class MainWindowViewModel : ObservableObject
       _settings.ExcludedExtensions = [.. ExcludedExtensions];
       _settings.ExcludedNames = [.. ExcludedNames];
       _settings.SyncOutputFolderWithSource = SyncOutputFolderWithSource;
+      _settings.ExportByModule = ExportByModule;
       _settings.Save();
    }
 
@@ -206,9 +210,12 @@ public partial class MainWindowViewModel : ObservableObject
             SelectedFormat,
             ExcludedExtensions,
             ExcludedNames,
-            SkipBinaryFiles));
+            SkipBinaryFiles,
+            ExportByModule));
 
-         StatusMessage = string.Format(Loc["StatusDone"], result.FileCount, result.OutputFullPath);
+         StatusMessage = ExportByModule
+            ? string.Format(Loc["StatusDoneModules"], result.FileCount, result.OutputFileCount, result.OutputFullPath)
+            : string.Format(Loc["StatusDone"], result.FileCount, result.OutputFullPath);
       }
       catch (Exception ex)
       {

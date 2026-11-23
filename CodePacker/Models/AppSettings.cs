@@ -15,6 +15,7 @@ public enum OutputFormat
 
 public class AppSettings
 {
+   public bool ExportByModule { get; set; } = false;
    private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };
    public string DefaultOutputFileName { get; set; } = "project_code";
    public OutputFormat DefaultFormat { get; set; } = OutputFormat.Markdown;

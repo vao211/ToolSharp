@@ -52,7 +52,7 @@
                     </Grid>
 
                     <CheckBox Content="{Binding Loc[SkipBinary]}" IsChecked="{Binding SkipBinaryFiles}" />
-
+                    <CheckBox Content="{Binding Loc[ExportByModule]}" IsChecked="{Binding ExportByModule}"/>
                     <Button Classes="accent" Command="{Binding ExportCommand}"
                             Content="{Binding Loc[BtnExport]}"
                             FontWeight="Bold"

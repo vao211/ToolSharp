@@ -29,5 +29,7 @@
   "PathExists": "Ứng dụng đã có sẵn trong PATH với đúng vị trí hiện tại.",
   "SyncOutputFolder": "Tự động đổi vị trí xuất file theo thư mục quét",
   "OpenFolder": "Mở thư mục",
-  "FolderNotFound": "Thư mục không tồn tại: {0}"
+  "FolderNotFound": "Thư mục không tồn tại: {0}",
+  "ExportByModule": "Xuất riêng từng module (thư mục) thành nhiều file",
+  "StatusDoneModules": "Hoàn tất! Đã xuất {0} file code thành {1} file module tại: {2}"
 }
