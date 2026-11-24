@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F5F6F8" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="#E5E7EB" />
+    <SolidColorBrush x:Key="ControlPressedBrush" Color="#D1D5DB" />
+    <SolidColorBrush x:Key="ControlDisabledBrush" Color="#F3F4F6" />
+    <SolidColorBrush x:Key="ControlBorderBrush" Color="#D1D5DB" />
+
+    <SolidColorBrush x:Key="ForegroundBrush" Color="#1F2937" />
+    <SolidColorBrush x:Key="SecondaryForegroundBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="DisabledForegroundBrush" Color="#9CA3AF" />
+
+    <SolidColorBrush x:Key="ListHeaderBackgroundBrush" Color="#F3F4F6" />
+    <SolidColorBrush x:Key="ListHeaderHoverBrush" Color="#E5E7EB" />
+    <SolidColorBrush x:Key="ListItemHoverBrush" Color="#F3F4F6" />
+    <SolidColorBrush x:Key="ListItemSelectedBrush" Color="#DBEAFE" />
+
+    <SolidColorBrush x:Key="ProgressBackgroundBrush" Color="#E5E7EB" />
+    <SolidColorBrush x:Key="ProgressForegroundBrush" Color="#2563EB" />
+
+    <SolidColorBrush x:Key="AccentDangerBrush" Color="#DD4B39" />
+    <SolidColorBrush x:Key="AccentDangerHoverBrush" Color="#C93B29" />
+    <SolidColorBrush x:Key="AccentDangerPressedBrush" Color="#B22F1F" />
+
+    <SolidColorBrush x:Key="ToggleTrackOffBrush" Color="#CBD5E1" />
+    <SolidColorBrush x:Key="ToggleTrackOnBrush" Color="#2563EB" />
+    <SolidColorBrush x:Key="ToggleThumbBrush" Color="#FFFFFF" />
+
+    <SolidColorBrush x:Key="CheckBoxCheckBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CheckBoxCheckedBackgroundBrush" Color="#2563EB" />
+
+    <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="#F3F4F6" />
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#CBD5E1" />
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#94A3B8" />
+</ResourceDictionary>

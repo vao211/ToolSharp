@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -7,13 +7,18 @@ namespace TempClear;
 
 public class MainViewModel : ViewModelBase
 {
+   private readonly AppSettings _settings;
    private bool _isBusy;
+   private bool _isDarkMode;
 
    private double _progressValue;
    private string _statusMessage;
 
    public MainViewModel()
    {
+      _settings = AppSettings.Load();
+      _isDarkMode = _settings.IsDarkMode;
+
       Folders = new ObservableCollection<FolderItem>();
 
       SelectAllCommand = new RelayCommand(_ => SetSelection(true));
@@ -27,6 +32,20 @@ public class MainViewModel : ViewModelBase
    }
 
    public ObservableCollection<FolderItem> Folders { get; set; }
+
+   public bool IsDarkMode
+   {
+      get => _isDarkMode;
+      set
+      {
+         if (_isDarkMode == value) return;
+         _isDarkMode = value;
+         OnPropertyChanged();
+         ThemeManager.ApplyTheme(value);
+         _settings.IsDarkMode = value;
+         _settings.Save();
+      }
+   }
 
    public double ProgressValue
    {
