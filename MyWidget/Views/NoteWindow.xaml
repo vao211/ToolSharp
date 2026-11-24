@@ -1,0 +1,1043 @@
+<Window x:Class="MyWidget.Views.NoteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:MyWidget.Services"
+        xmlns:vm="clr-namespace:MyWidget.ViewModels"
+        Title="{Binding DisplayTitle, Mode=OneWay}"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        MinWidth="236"
+        MinHeight="54"
+        AllowDrop="True"
+        DragOver="NoteArea_OnDragOver"
+        Drop="NoteArea_OnDrop"
+        PreviewKeyDown="Window_OnPreviewKeyDown">
+
+    <Window.Resources>
+        <!-- Compact Header Icon Button -->
+        <Style x:Key="NoteHeaderBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{Binding Palette.HeaderForegroundBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="{DynamicResource SmallCornerRadius}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#24000000" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#38000000" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Compact Toolbar Action Button -->
+        <Style x:Key="NoteToolbarBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{Binding Palette.ForegroundBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="{DynamicResource SmallCornerRadius}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{Binding DataContext.Palette.HoverBrush, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Block Mini Hover Action Button -->
+        <Style x:Key="BlockMiniActionBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{Binding ParentNote.Palette.SecondaryForegroundBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="{DynamicResource TinyCornerRadius}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{Binding ParentNote.Palette.HoverBrush}" />
+                                <Setter Property="Foreground" Value="{Binding ParentNote.Palette.ForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Note Todoo CheckBox -->
+        <Style x:Key="NoteTodoCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,3,8,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="Box"
+                                Width="18"
+                                Height="18"
+                                CornerRadius="{DynamicResource TinyCornerRadius}"
+                                BorderThickness="1.6"
+                                BorderBrush="{Binding ParentNote.Palette.AccentBrush}"
+                                Background="Transparent">
+                            <TextBlock x:Name="Tick"
+                                       Text="✓"
+                                       FontSize="11.5"
+                                       FontWeight="Bold"
+                                       Foreground="{Binding ParentNote.Palette.AccentForegroundBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="{Binding ParentNote.Palette.AccentBrush}" />
+                                <Setter TargetName="Tick" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <!-- Main Card Container (8px margin for drop shadow + resize border) -->
+        <Grid Margin="8" Grid.IsSharedSizeScope="True">
+
+            <!-- LAYER 1: Pure Background + Border + DropShadow (Controlled ONLY by BackgroundOpacity) -->
+            <Border CornerRadius="{DynamicResource CardCornerRadius}"
+                    Background="{Binding Palette.SurfaceBrush}"
+                    BorderBrush="{Binding Palette.BorderBrush}"
+                    BorderThickness="1"
+                    Opacity="{Binding BackgroundOpacity}"
+                    IsHitTestVisible="False">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="14"
+                                      ShadowDepth="3"
+                                      Direction="270"
+                                      Opacity="0.26"
+                                      Color="#000000" />
+                </Border.Effect>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="38" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" SharedSizeGroup="NoteToolbarRow" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header Background Fill -->
+                    <Border Grid.Row="0" Background="{Binding Palette.HeaderBrush}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="{DynamicResource NoteHeaderCornerRadius}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                        <Setter Property="CornerRadius" Value="{DynamicResource NoteInnerCornerRadius}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                    </Border>
+
+                    <!-- Bottom Toolbar Background Fill -->
+                    <Border Grid.Row="2"
+                            Background="{Binding Palette.ToolbarBrush}"
+                            BorderBrush="{Binding Palette.BorderBrush}"
+                            BorderThickness="0,1,0,0"
+                            CornerRadius="{DynamicResource NoteFooterCornerRadius}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- LAYER 2: Interactive Header, Text/Blocks & Toolbar (Controlled ONLY by ContentOpacity) -->
+            <Grid Opacity="{Binding ContentOpacity}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="38" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" SharedSizeGroup="NoteToolbarRow" />
+                </Grid.RowDefinitions>
+
+                <!-- HEADER BAR (Pure Drag Handle + Controls) -->
+                <Border x:Name="HeaderBorder"
+                        Grid.Row="0"
+                        Background="#01000000"
+                        CornerRadius="{DynamicResource NoteHeaderCornerRadius}"
+                        Padding="6,0"
+                        ToolTip="{loc:Loc TooltipDragMoveNote}"
+                        MouseLeftButtonDown="HeaderDrag_OnMouseLeftButtonDown"
+                        MouseMove="HeaderDrag_OnMouseMove"
+                        MouseLeftButtonUp="HeaderDrag_OnMouseLeftButtonUp"
+                        LostMouseCapture="HeaderDrag_OnLostMouseCapture">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Cursor" Value="SizeAll" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                                    <Setter Property="Cursor" Value="Arrow" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: New Note Button -->
+                        <Button Grid.Column="0"
+                                Style="{StaticResource NoteHeaderBtnStyle}"
+                                Command="{Binding NewSiblingNoteCommand}"
+                                ToolTip="{loc:Loc TooltipNewNote}"
+                                Content="＋"
+                                FontWeight="Bold"
+                                FontSize="14" />
+
+                        <!-- Center: Drag Area + Title Display / On-demand Inline Editor -->
+                        <Grid Grid.Column="1" Margin="4,0">
+                            <DockPanel x:Name="TitleDisplayPanel" VerticalAlignment="Center">
+                                <Button DockPanel.Dock="Right"
+                                        Style="{StaticResource NoteHeaderBtnStyle}"
+                                        Width="22"
+                                        Height="22"
+                                        FontSize="11.5"
+                                        Content="✎"
+                                        ToolTip="{loc:Loc TooltipEditTitle}"
+                                        Visibility="{Binding IsEditable, Converter={StaticResource BoolToVis}}"
+                                        Click="EditTitleBtn_OnClick" />
+
+                                <TextBlock Text="⋮⋮"
+                                           Opacity="0.45"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           Margin="2,0,5,0"
+                                           Foreground="{Binding Palette.HeaderForegroundBrush}"
+                                           IsHitTestVisible="False" />
+
+                                <!-- Non-empty Title -->
+                                <TextBlock Text="{Binding Title}"
+                                           Foreground="{Binding Palette.HeaderForegroundBrush}"
+                                           FontWeight="SemiBold"
+                                           FontSize="13"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           IsHitTestVisible="False">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Title}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                                <!-- Placeholder when Title is empty -->
+                                <TextBlock Text="{loc:Loc PlaceholderNoteTitle}"
+                                           Foreground="{Binding Palette.SecondaryForegroundBrush}"
+                                           Opacity="0.75"
+                                           FontSize="12.5"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           IsHitTestVisible="False">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Title}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
+
+                            <!-- Inline Title Editor (Shown only while renaming) -->
+                            <Border x:Name="TitleEditorHost"
+                                    Visibility="Collapsed"
+                                    CornerRadius="{DynamicResource TinyCornerRadius}"
+                                    Background="#22000000"
+                                    Padding="4,2"
+                                    VerticalAlignment="Center">
+                                <TextBox x:Name="TitleTextBox"
+                                         Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Foreground="{Binding Palette.HeaderForegroundBrush}"
+                                         CaretBrush="{Binding Palette.HeaderForegroundBrush}"
+                                         FontWeight="SemiBold"
+                                         FontSize="13"
+                                         VerticalContentAlignment="Center"
+                                         KeyDown="TitleTextBox_OnKeyDown"
+                                         LostKeyboardFocus="TitleTextBox_OnLostKeyboardFocus" />
+                            </Border>
+                        </Grid>
+
+                        <!-- Right: Note Controls -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Pin Mode Cycle -->
+                            <Button Style="{StaticResource NoteHeaderBtnStyle}"
+                                    Command="{Binding CyclePinModeCommand}"
+                                    Content="{Binding PinModeIcon}">
+                                <Button.ToolTip>
+                                    <ToolTip Content="{Binding PinModeLabel}" />
+                                </Button.ToolTip>
+                            </Button>
+
+                            <!-- Color & Opacity Popup Toggle -->
+                            <ToggleButton x:Name="PaletteToggle"
+                                          Width="26"
+                                          Height="26"
+                                          Cursor="Hand"
+                                          Focusable="False"
+                                          ToolTip="{loc:Loc TooltipNoteAppearance}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Bd" Background="Transparent" CornerRadius="{DynamicResource SmallCornerRadius}">
+                                            <Ellipse Width="13"
+                                                     Height="13"
+                                                     Fill="{Binding Palette.AccentBrush}"
+                                                     Stroke="{Binding Palette.HeaderForegroundBrush}"
+                                                     StrokeThickness="1.2" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#24000000" />
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#34000000" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <!-- Lock Toggle -->
+                            <Button Style="{StaticResource NoteHeaderBtnStyle}"
+                                    Command="{Binding ToggleLockCommand}"
+                                    Content="{Binding LockIcon}"
+                                    ToolTip="{loc:Loc TooltipLockNote}" />
+
+                            <!-- Collapse Toggle -->
+                            <Button Style="{StaticResource NoteHeaderBtnStyle}"
+                                    Command="{Binding ToggleCollapseCommand}"
+                                    Content="{Binding CollapseIcon}"
+                                    ToolTip="{loc:Loc TooltipCollapseNote}" />
+
+                            <!-- More Menu -->
+                            <Button x:Name="MoreBtn"
+                                    Style="{StaticResource NoteHeaderBtnStyle}"
+                                    Content="⋯"
+                                    FontWeight="Bold"
+                                    ToolTip="{loc:Loc TooltipMoreActions}"
+                                    Click="MoreBtn_OnClick">
+                                <Button.ContextMenu>
+                                    <ContextMenu x:Name="NoteContextMenu" Opened="NoteContextMenu_OnOpened">
+                                        <MenuItem Header="{loc:Loc MenuOpenManager}" Command="{Binding OpenManagerCommand}" />
+                                        <MenuItem Header="{loc:Loc BtnCenterOnScreen}" Command="{Binding CenterOnScreenCommand}" />
+                                        <Separator />
+                                        <MenuItem Header="{loc:Loc PinModeDesktop}"
+                                                  IsChecked="{Binding IsDesktopPinned, Mode=OneWay}"
+                                                  Command="{Binding SetPinDesktopCommand}" />
+                                        <MenuItem Header="{loc:Loc PinModeTopmost}"
+                                                  IsChecked="{Binding IsAlwaysOnTop, Mode=OneWay}"
+                                                  Command="{Binding SetPinTopmostCommand}" />
+                                        <MenuItem Header="{loc:Loc PinModeNormal}"
+                                                  IsChecked="{Binding IsNormalWindow, Mode=OneWay}"
+                                                  Command="{Binding SetPinNormalCommand}" />
+                                        <Separator />
+                                        <MenuItem Header="{loc:Loc BtnDuplicateNote}" Command="{Binding DuplicateNoteCommand}" />
+                                        <MenuItem Header="{loc:Loc BtnHideNote}" Command="{Binding HideNoteCommand}" />
+                                        <MenuItem Header="{loc:Loc BtnDeleteNote}"
+                                                  Foreground="{DynamicResource DangerBrush}"
+                                                  Command="{Binding DeleteNoteCommand}" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+
+                            <!-- Hide Note (Close from desktop) -->
+                            <Button Style="{StaticResource NoteHeaderBtnStyle}"
+                                    Command="{Binding HideNoteCommand}"
+                                    Content="✕"
+                                    ToolTip="{loc:Loc TooltipHideNote}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+            <!-- APPEARANCE POPUP (Color Swatches + Custom Hex + Opacity + Pin Mode) -->
+            <Popup IsOpen="{Binding IsChecked, ElementName=PaletteToggle, Mode=TwoWay}"
+                   PlacementTarget="{Binding ElementName=PaletteToggle}"
+                   Placement="Bottom"
+                   StaysOpen="False"
+                   AllowsTransparency="True"
+                   PopupAnimation="Fade">
+                <Border Margin="8"
+                        Width="268"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource ControlBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource CardCornerRadius}"
+                        Padding="12">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.25" />
+                    </Border.Effect>
+                    <StackPanel>
+                        <TextBlock Text="{loc:Loc LabelNoteColor}"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource ForegroundBrush}"
+                                   Margin="0,0,0,8" />
+
+                        <!-- Swatches -->
+                        <ItemsControl ItemsSource="{Binding ColorSwatches}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ColorSwatchItem}">
+                                    <Button Width="30"
+                                            Height="30"
+                                            Margin="0,0,6,6"
+                                            Cursor="Hand"
+                                            Command="{Binding DataContext.SelectNoteColorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Grid>
+                                                    <Ellipse Width="26"
+                                                             Height="26"
+                                                             Fill="{Binding PreviewBrush}"
+                                                             Stroke="{DynamicResource ControlBorderBrush}"
+                                                             StrokeThickness="1" />
+                                                    <Ellipse Width="30"
+                                                             Height="30"
+                                                             Stroke="{DynamicResource ForegroundBrush}"
+                                                             StrokeThickness="2"
+                                                             Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}}" />
+                                                    <TextBlock Text="A"
+                                                               FontSize="10"
+                                                               FontWeight="Bold"
+                                                               Foreground="#FFFFFF"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               Visibility="{Binding IsFollowAppAccent, Converter={StaticResource BoolToVis}}" />
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Custom Hex -->
+                        <Grid Margin="0,4,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0"
+                                     Style="{StaticResource ModernTextBoxStyle}"
+                                     Text="{Binding CustomColorHex, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="8,5"
+                                     FontSize="12" />
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="6,0,0,0"
+                                    Padding="10,5"
+                                    FontSize="12"
+                                    Content="{loc:Loc BtnApply}"
+                                    Command="{Binding ApplyCustomNoteColorCommand}" />
+                        </Grid>
+
+                        <!-- Background Opacity Slider (0% - 100%) -->
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock Text="{loc:Loc LabelBackgroundOpacity}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource ForegroundBrush}" />
+                            <TextBlock Text="{Binding BackgroundOpacityPercentText}"
+                                       DockPanel.Dock="Right"
+                                       HorizontalAlignment="Right"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource SecondaryForegroundBrush}" />
+                        </DockPanel>
+                        <Slider Minimum="0.0"
+                                Maximum="1.0"
+                                TickFrequency="0.05"
+                                Margin="0,0,0,10"
+                                Value="{Binding BackgroundOpacity, Mode=TwoWay}" />
+
+                        <!-- Content / Text Opacity Slider (20% - 100%) -->
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock Text="{loc:Loc LabelContentOpacity}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource ForegroundBrush}" />
+                            <TextBlock Text="{Binding ContentOpacityPercentText}"
+                                       DockPanel.Dock="Right"
+                                       HorizontalAlignment="Right"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource SecondaryForegroundBrush}" />
+                        </DockPanel>
+                        <Slider Minimum="0.20"
+                                Maximum="1.0"
+                                TickFrequency="0.05"
+                                Value="{Binding ContentOpacity, Mode=TwoWay}" />
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- CONTENT SCROLL AREA -->
+            <ScrollViewer Grid.Row="1"
+                          Background="#01000000"
+                          Visibility="{Binding IsCollapsed, Converter={StaticResource InvBoolToVis}}"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="10,8,8,8">
+                <ItemsControl ItemsSource="{Binding Blocks}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:NoteBlockViewModel}">
+                            <Grid x:Name="BlockContainer" Margin="0,0,0,6" Background="Transparent">
+                                <!-- 1. TEXT BLOCK -->
+                                <Grid Visibility="{Binding IsTextType, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{loc:Loc PlaceholderTypeNote}"
+                                               Foreground="{Binding ParentNote.Palette.SecondaryForegroundBrush}"
+                                               Opacity="0.65"
+                                               FontSize="{Binding FontSize}"
+                                               Margin="4,3,0,0"
+                                               IsHitTestVisible="False">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+
+                                    <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                             IsReadOnly="{Binding ParentNote.IsLocked}"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             Padding="2,2,26,2"
+                                             Foreground="{Binding ParentNote.Palette.ForegroundBrush}"
+                                             CaretBrush="{Binding ParentNote.Palette.ForegroundBrush}"
+                                             FontSize="{Binding FontSize}"
+                                             FontWeight="{Binding FontWeight}"
+                                             FontStyle="{Binding FontStyle}"
+                                             TextDecorations="{Binding TextDecorations}"
+                                             Loaded="BlockTextBox_OnLoaded"
+                                             GotFocus="BlockTextBox_OnGotFocus"
+                                             PreviewKeyDown="BlockTextBox_OnPreviewKeyDown" />
+                                </Grid>
+
+                                <!-- 2. CHECKBOX BLOCK -->
+                                <Grid Visibility="{Binding IsCheckBoxType, Converter={StaticResource BoolToVis}}"
+                                      Margin="2,1,0,1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <CheckBox Grid.Column="0"
+                                              Style="{StaticResource NoteTodoCheckBoxStyle}"
+                                              IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                              IsEnabled="{Binding ParentNote.IsEditable}" />
+
+                                    <Grid Grid.Column="1">
+                                        <TextBlock Text="{loc:Loc PlaceholderTodoItem}"
+                                                   Foreground="{Binding ParentNote.Palette.SecondaryForegroundBrush}"
+                                                   Opacity="0.6"
+                                                   FontSize="{Binding FontSize}"
+                                                   Margin="2,1,0,0"
+                                                   IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsReadOnly="{Binding ParentNote.IsLocked}"
+                                                 AcceptsReturn="False"
+                                                 TextWrapping="Wrap"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Padding="0,1,26,1"
+                                                 Opacity="{Binding CheckTextOpacity}"
+                                                 Foreground="{Binding ParentNote.Palette.ForegroundBrush}"
+                                                 CaretBrush="{Binding ParentNote.Palette.ForegroundBrush}"
+                                                 FontSize="{Binding FontSize}"
+                                                 FontWeight="{Binding FontWeight}"
+                                                 FontStyle="{Binding FontStyle}"
+                                                 TextDecorations="{Binding TextDecorations}"
+                                                 Loaded="BlockTextBox_OnLoaded"
+                                                 GotFocus="BlockTextBox_OnGotFocus"
+                                                 PreviewKeyDown="BlockTextBox_OnPreviewKeyDown" />
+                                    </Grid>
+                                </Grid>
+
+                                <!-- 3. QUOTE / HIGHLIGHT BLOCK -->
+                                <Border Visibility="{Binding IsQuoteType, Converter={StaticResource BoolToVis}}"
+                                        Background="{Binding ParentNote.Palette.HoverBrush}"
+                                        BorderBrush="{Binding ParentNote.Palette.AccentBrush}"
+                                        BorderThickness="3.5,0,0,0"
+                                        CornerRadius="{DynamicResource TinyCornerRadius}"
+                                        Padding="8,6,26,6"
+                                        Margin="0,2">
+                                    <Grid>
+                                        <TextBlock Text="{loc:Loc PlaceholderQuote}"
+                                                   Foreground="{Binding ParentNote.Palette.SecondaryForegroundBrush}"
+                                                   Opacity="0.65"
+                                                   FontSize="{Binding FontSize}"
+                                                   IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsReadOnly="{Binding ParentNote.IsLocked}"
+                                                 AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Foreground="{Binding ParentNote.Palette.ForegroundBrush}"
+                                                 CaretBrush="{Binding ParentNote.Palette.ForegroundBrush}"
+                                                 FontSize="{Binding FontSize}"
+                                                 FontWeight="{Binding FontWeight}"
+                                                 FontStyle="{Binding FontStyle}"
+                                                 TextDecorations="{Binding TextDecorations}"
+                                                 Loaded="BlockTextBox_OnLoaded"
+                                                 GotFocus="BlockTextBox_OnGotFocus"
+                                                 PreviewKeyDown="BlockTextBox_OnPreviewKeyDown" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- 4. IMAGE BLOCK -->
+                                <Border Visibility="{Binding IsImageType, Converter={StaticResource BoolToVis}}"
+                                        Background="{Binding ParentNote.Palette.HoverBrush}"
+                                        CornerRadius="{DynamicResource ControlCornerRadius}"
+                                        Padding="5"
+                                        Margin="0,2">
+                                    <StackPanel>
+                                        <!-- Missing External Image Notice -->
+                                        <Border Visibility="{Binding IsImageMissing, Converter={StaticResource BoolToVis}}"
+                                                Padding="10"
+                                                CornerRadius="{DynamicResource SmallCornerRadius}"
+                                                Background="{DynamicResource DangerSoftBrush}">
+                                            <StackPanel>
+                                                <TextBlock Text="{loc:Loc MsgMissingImage}"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource DangerBrush}" />
+                                                <TextBlock Text="{Binding FullImagePath}"
+                                                           FontSize="11"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,3,0,0"
+                                                           Foreground="{Binding ParentNote.Palette.SecondaryForegroundBrush}" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Valid Image -->
+                                        <Grid Visibility="{Binding IsImageMissing, Converter={StaticResource InvBoolToVis}}">
+                                            <Border CornerRadius="{DynamicResource SmallCornerRadius}" ClipToBounds="True">
+                                                <Image Source="{Binding ImageSource}"
+                                                       MaxHeight="{Binding ImageMaxHeight}"
+                                                       Stretch="Uniform"
+                                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                                       Cursor="Hand"
+                                                       MouseLeftButtonUp="NoteImage_OnMouseLeftButtonUp" />
+                                            </Border>
+
+                                            <!-- Image Quick Controls Pill -->
+                                            <Border HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Margin="6"
+                                                    CornerRadius="{DynamicResource SmallCornerRadius}"
+                                                    Background="#AA111827"
+                                                    Padding="4,2">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Opacity" Value="0" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=BlockContainer}" Value="True">
+                                                                <Setter Property="Opacity" Value="1" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="🔍"
+                                                            Foreground="#FFFFFF"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            Padding="4,2"
+                                                            Cursor="Hand"
+                                                            ToolTip="{loc:Loc TooltipZoomImage}"
+                                                            Click="ZoomImageBtn_OnClick" />
+                                                    <Button Content="↕"
+                                                            Foreground="#FFFFFF"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            Padding="5,2"
+                                                            Cursor="Hand"
+                                                            ToolTip="{loc:Loc TooltipResizeImage}"
+                                                            Command="{Binding CycleImageSizeCommand}" />
+                                                    <Button Content="📥"
+                                                            Foreground="#FFFFFF"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            Padding="4,2"
+                                                            Cursor="Hand"
+                                                            Visibility="{Binding IsExternalImage, Converter={StaticResource BoolToVis}}"
+                                                            ToolTip="{loc:Loc TooltipCopySingleImageToAppData}"
+                                                            Command="{Binding CopyImageToAppDataCommand}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- Optional Image Caption -->
+                                        <Grid Margin="2,4,2,0">
+                                            <TextBlock Text="{loc:Loc PlaceholderImageCaption}"
+                                                       Foreground="{Binding ParentNote.Palette.SecondaryForegroundBrush}"
+                                                       Opacity="0.55"
+                                                       FontSize="11.5"
+                                                       IsHitTestVisible="False">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Text}" Value="">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                     IsReadOnly="{Binding ParentNote.IsLocked}"
+                                                     Background="Transparent"
+                                                     BorderThickness="0"
+                                                     FontSize="11.5"
+                                                     Foreground="{Binding ParentNote.Palette.SecondaryForegroundBrush}"
+                                                     CaretBrush="{Binding ParentNote.Palette.ForegroundBrush}"
+                                                     TextWrapping="Wrap" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- 5. DIVIDER BLOCK -->
+                                <Grid Visibility="{Binding IsDividerType, Converter={StaticResource BoolToVis}}"
+                                      Height="18">
+                                    <Border Height="1.5"
+                                            Margin="2,0,28,0"
+                                            VerticalAlignment="Center"
+                                            Background="{Binding ParentNote.Palette.BorderBrush}" />
+                                </Grid>
+
+                                <!-- HOVER BLOCK ACTIONS (Move Up / Down / Delete) -->
+                                <Border HorizontalAlignment="Right"
+                                        VerticalAlignment="Top"
+                                        CornerRadius="{DynamicResource TinyCornerRadius}"
+                                        Background="{Binding ParentNote.Palette.SurfaceBrush}"
+                                        Visibility="{Binding ParentNote.IsEditable, Converter={StaticResource BoolToVis}}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Opacity" Value="0" />
+                                            <Setter Property="IsHitTestVisible" Value="False" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsMouseOver, ElementName=BlockContainer}" Value="True">
+                                                    <Setter Property="Opacity" Value="0.92" />
+                                                    <Setter Property="IsHitTestVisible" Value="True" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Style="{StaticResource BlockMiniActionBtnStyle}"
+                                                Content="↑"
+                                                ToolTip="{loc:Loc TooltipMoveUp}"
+                                                Command="{Binding MoveUpCommand}" />
+                                        <Button Style="{StaticResource BlockMiniActionBtnStyle}"
+                                                Content="↓"
+                                                ToolTip="{loc:Loc TooltipMoveDown}"
+                                                Command="{Binding MoveDownCommand}" />
+                                        <Button Style="{StaticResource BlockMiniActionBtnStyle}"
+                                                Content="×"
+                                                FontSize="13"
+                                                ToolTip="{loc:Loc TooltipRemoveBlock}"
+                                                Command="{Binding DeleteBlockCommand}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- BOTTOM TOOLBAR (Hidden when collapsed or locked) -->
+            <Border Grid.Row="2"
+                    Background="#01000000"
+                    CornerRadius="{DynamicResource NoteFooterCornerRadius}"
+                    Padding="6,3,12,3"
+                    MouseLeftButtonDown="HeaderDrag_OnMouseLeftButtonDown"
+                    MouseMove="HeaderDrag_OnMouseMove"
+                    MouseLeftButtonUp="HeaderDrag_OnMouseLeftButtonUp"
+                    LostMouseCapture="HeaderDrag_OnLostMouseCapture">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+
+                <DockPanel>
+                    <!-- Right: Formatting Controls -->
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                Content="B"
+                                FontWeight="Bold"
+                                ToolTip="{loc:Loc TooltipBold}"
+                                Command="{Binding ToggleBoldActiveCommand}" />
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                Content="I"
+                                FontStyle="Italic"
+                                ToolTip="{loc:Loc TooltipItalic}"
+                                ToolTipService.ShowDuration="8000"
+                                Command="{Binding ToggleItalicActiveCommand}" />
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                ToolTip="{loc:Loc TooltipUnderline}"
+                                Command="{Binding ToggleUnderlineActiveCommand}">
+                            <TextBlock Text="U" TextDecorations="Underline" />
+                        </Button>
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                ToolTip="{loc:Loc TooltipStrikethrough}"
+                                Command="{Binding ToggleStrikeActiveCommand}">
+                            <TextBlock Text="S" TextDecorations="Strikethrough" />
+                        </Button>
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                Content="Aa"
+                                ToolTip="{loc:Loc TooltipFontSize}"
+                                Command="{Binding CycleFontSizeActiveCommand}" />
+                    </StackPanel>
+
+                    <!-- Left: Insert Block Buttons -->
+                    <WrapPanel VerticalAlignment="Center">
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                Content="¶"
+                                ToolTip="{loc:Loc BtnAddText}"
+                                Command="{Binding AddTextBlockCommand}" />
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                Content="☑"
+                                ToolTip="{loc:Loc BtnAddCheck}"
+                                Command="{Binding AddCheckBoxBlockCommand}" />
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                Content="🖼"
+                                ToolTip="{loc:Loc BtnAddImage}"
+                                Command="{Binding AddImageDialogCommand}" />
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                Content="❝"
+                                ToolTip="{loc:Loc BtnAddQuote}"
+                                Command="{Binding AddQuoteBlockCommand}" />
+                        <Button Style="{StaticResource NoteToolbarBtnStyle}"
+                                Content="―"
+                                ToolTip="{loc:Loc BtnAddDivider}"
+                                Command="{Binding AddDividerBlockCommand}" />
+                    </WrapPanel>
+                </DockPanel>
+            </Border>
+            </Grid>
+        </Grid>
+
+        <!-- 8-DIRECTION EDGE & CORNER RESIZE HANDLES (#01000000 ensures OS hit-testing on layered transparent window) -->
+        <Grid Visibility="{Binding IsEditable, Converter={StaticResource BoolToVis}}">
+            <!-- Horizontal width handles (active even when collapsed) -->
+            <Border Tag="L"
+                    Width="10"
+                    HorizontalAlignment="Left"
+                    Margin="2,16,0,16"
+                    Background="#01000000"
+                    Cursor="SizeWE"
+                    MouseLeftButtonDown="ResizeHandle_OnMouseLeftButtonDown"
+                    MouseMove="ResizeHandle_OnMouseMove"
+                    MouseLeftButtonUp="ResizeHandle_OnMouseLeftButtonUp"
+                    LostMouseCapture="ResizeHandle_OnLostMouseCapture" />
+
+            <Border Tag="R"
+                    Width="10"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,2,16"
+                    Background="#01000000"
+                    Cursor="SizeWE"
+                    MouseLeftButtonDown="ResizeHandle_OnMouseLeftButtonDown"
+                    MouseMove="ResizeHandle_OnMouseMove"
+                    MouseLeftButtonUp="ResizeHandle_OnMouseLeftButtonUp"
+                    LostMouseCapture="ResizeHandle_OnLostMouseCapture" />
+
+            <!-- Vertical & corner handles (active when expanded) -->
+            <Grid Visibility="{Binding IsCollapsed, Converter={StaticResource InvBoolToVis}}">
+                <Border Tag="T"
+                        Height="9"
+                        VerticalAlignment="Top"
+                        Margin="16,2,16,0"
+                        Background="#01000000"
+                        Cursor="SizeNS"
+                        MouseLeftButtonDown="ResizeHandle_OnMouseLeftButtonDown"
+                        MouseMove="ResizeHandle_OnMouseMove"
+                        MouseLeftButtonUp="ResizeHandle_OnMouseLeftButtonUp"
+                        LostMouseCapture="ResizeHandle_OnLostMouseCapture" />
+
+                <Border Tag="B"
+                        Height="10"
+                        VerticalAlignment="Bottom"
+                        Margin="16,0,16,2"
+                        Background="#01000000"
+                        Cursor="SizeNS"
+                        MouseLeftButtonDown="ResizeHandle_OnMouseLeftButtonDown"
+                        MouseMove="ResizeHandle_OnMouseMove"
+                        MouseLeftButtonUp="ResizeHandle_OnMouseLeftButtonUp"
+                        LostMouseCapture="ResizeHandle_OnLostMouseCapture" />
+
+                <Border Tag="TL"
+                        Width="16"
+                        Height="16"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Margin="2,2,0,0"
+                        Background="#01000000"
+                        Cursor="SizeNWSE"
+                        MouseLeftButtonDown="ResizeHandle_OnMouseLeftButtonDown"
+                        MouseMove="ResizeHandle_OnMouseMove"
+                        MouseLeftButtonUp="ResizeHandle_OnMouseLeftButtonUp"
+                        LostMouseCapture="ResizeHandle_OnLostMouseCapture" />
+
+                <Border Tag="TR"
+                        Width="16"
+                        Height="16"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="0,2,2,0"
+                        Background="#01000000"
+                        Cursor="SizeNESW"
+                        MouseLeftButtonDown="ResizeHandle_OnMouseLeftButtonDown"
+                        MouseMove="ResizeHandle_OnMouseMove"
+                        MouseLeftButtonUp="ResizeHandle_OnMouseLeftButtonUp"
+                        LostMouseCapture="ResizeHandle_OnLostMouseCapture" />
+
+                <Border Tag="BL"
+                        Width="16"
+                        Height="16"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Margin="2,0,0,2"
+                        Background="#01000000"
+                        Cursor="SizeNESW"
+                        MouseLeftButtonDown="ResizeHandle_OnMouseLeftButtonDown"
+                        MouseMove="ResizeHandle_OnMouseMove"
+                        MouseLeftButtonUp="ResizeHandle_OnMouseLeftButtonUp"
+                        LostMouseCapture="ResizeHandle_OnLostMouseCapture" />
+
+                <Border Tag="BR"
+                        Width="18"
+                        Height="18"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,2,2"
+                        Background="#01000000"
+                        Cursor="SizeNWSE"
+                        MouseLeftButtonDown="ResizeHandle_OnMouseLeftButtonDown"
+                        MouseMove="ResizeHandle_OnMouseMove"
+                        MouseLeftButtonUp="ResizeHandle_OnMouseLeftButtonUp"
+                        LostMouseCapture="ResizeHandle_OnLostMouseCapture">
+                    <Path Data="M 11,4 L 4,11 M 11,8 L 8,11"
+                          Stroke="{Binding Palette.SecondaryForegroundBrush}"
+                          StrokeThickness="1.3"
+                          Opacity="0.55"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Bottom"
+                          Margin="0,0,9,9"
+                          IsHitTestVisible="False" />
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
