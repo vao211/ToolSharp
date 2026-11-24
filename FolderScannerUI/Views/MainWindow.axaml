@@ -1,0 +1,755 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:FolderScannerUI.ViewModels"
+        xmlns:svc="using:FolderScannerUI.Services"
+        xmlns:models="using:FolderScannerUI.Models"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1160" d:DesignHeight="740"
+        x:Class="FolderScannerUI.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/icon.ico"
+        Title="{Binding Loc[AppTitle]}"
+        Width="1160" Height="740"
+        MinWidth="920" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBgBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- TOP HEADER BAR -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource HeaderBgBrush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="20,12">
+            <Grid ColumnDefinitions="*,Auto">
+                <!-- Brand Title -->
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource AccentBrush}"
+                            CornerRadius="0"
+                            Width="38" Height="38">
+                        <PathIcon Data="{StaticResource IconRadar}"
+                                  Foreground="White"
+                                  Width="20" Height="20" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center" Spacing="1">
+                        <TextBlock Text="{Binding Loc[AppTitle]}"
+                                   FontSize="17" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Loc[AppSubtitle]}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Header Controls: Admin, Language, Theme -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <!-- Admin Badge (when already Admin) -->
+                    <Border IsVisible="{Binding IsAdministrator}"
+                            Background="{DynamicResource SuccessBgBrush}"
+                            CornerRadius="0" Padding="10,6" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconShield}"
+                                      Foreground="{DynamicResource SuccessFgBrush}"
+                                      Width="14" Height="14" />
+                            <TextBlock Text="{Binding Loc[HeaderAdminActive]}"
+                                       Foreground="{DynamicResource SuccessFgBrush}"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Elevate Admin Button (Windows non-admin) -->
+                    <Button IsVisible="{Binding CanElevateAdmin}"
+                            Command="{Binding ElevateAdminCommand}"
+                            Classes="icon-btn"
+                            ToolTip.Tip="{Binding Loc[HeaderElevateTooltip]}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconShield}"
+                                      Foreground="{DynamicResource WarningFgBrush}"
+                                      Width="14" Height="14" />
+                            <TextBlock Text="{Binding Loc[HeaderElevateAdmin]}"
+                                       FontSize="12" FontWeight="Medium"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Language Switcher (scans lang/*.json) -->
+                    <Border Background="{DynamicResource CardSubtleBrush}"
+                            BorderBrush="{DynamicResource BorderSubtleBrush}"
+                            BorderThickness="1"
+                            CornerRadius="0"
+                            Padding="8,3">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconGlobe}"
+                                      Foreground="{DynamicResource TextMutedBrush}"
+                                      Width="15" Height="15" />
+                            <ComboBox ItemsSource="{Binding Languages}"
+                                      SelectedItem="{Binding SelectedLanguage}"
+                                      BorderThickness="0"
+                                      Background="Transparent"
+                                      MinWidth="115"
+                                      FontSize="12"
+                                      Padding="4,3">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="svc:LanguageOption">
+                                        <TextBlock Text="{Binding DisplayName}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Command="{Binding ReloadLanguagesCommand}"
+                                    Classes="row-action-btn"
+                                    ToolTip.Tip="{Binding Loc[HeaderReloadLangTooltip]}"
+                                    Padding="4">
+                                <PathIcon Data="{StaticResource IconRefresh}"
+                                          Foreground="{DynamicResource TextMutedBrush}"
+                                          Width="13" Height="13" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Light / Dark Theme Toggle -->
+                    <Button Command="{Binding ToggleThemeCommand}"
+                            Classes="icon-btn"
+                            ToolTip.Tip="{Binding Loc[ThemeToggleTooltip]}"
+                            Padding="12,7">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <PathIcon IsVisible="{Binding IsDarkMode}"
+                                      Data="{StaticResource IconMoon}"
+                                      Foreground="{DynamicResource AccentTextBrush}"
+                                      Width="15" Height="15" />
+                            <PathIcon IsVisible="{Binding !IsDarkMode}"
+                                      Data="{StaticResource IconSun}"
+                                      Foreground="{DynamicResource FolderBadgeFgBrush}"
+                                      Width="15" Height="15" />
+                            <TextBlock Text="{Binding ThemeLabel}"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- MAIN CONTENT: LEFT SIDEBAR + RIGHT WORKSPACE -->
+        <Grid Grid.Row="1" ColumnDefinitions="320,*" Margin="16,16,16,12" ColumnSpacing="16">
+
+            <!-- LEFT SIDEBAR -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="14">
+
+                    <!-- Card 1: Target Folder -->
+                    <Border Classes="card" Padding="14">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding Loc[SectionTargetFolder]}"
+                                       FontSize="11" FontWeight="Bold" LetterSpacing="0.8"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding TargetFolder}"
+                                         PlaceholderText="{Binding Loc[PlaceholderFolderPath]}"
+                                         IsEnabled="{Binding !IsScanning}"
+                                         CornerRadius="0"
+                                         FontSize="12" />
+                                <Button Grid.Column="1"
+                                        Click="PickFolder_Click"
+                                        IsEnabled="{Binding !IsScanning}"
+                                        Classes="icon-btn"
+                                        Content="{Binding Loc[BtnBrowse]}"
+                                        FontSize="12" FontWeight="SemiBold"
+                                        Padding="12,7" />
+                            </Grid>
+
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+                                <Button Classes="chip-btn"
+                                        Content="{Binding Loc[QuickDesktop]}"
+                                        Command="{Binding SelectQuickFolderCommand}"
+                                        CommandParameter="Desktop"
+                                        IsEnabled="{Binding !IsScanning}" />
+                                <Button Classes="chip-btn"
+                                        Content="{Binding Loc[QuickDownloads]}"
+                                        Command="{Binding SelectQuickFolderCommand}"
+                                        CommandParameter="Downloads"
+                                        IsEnabled="{Binding !IsScanning}" />
+                                <Button Classes="chip-btn"
+                                        Content="{Binding Loc[QuickDocuments]}"
+                                        Command="{Binding SelectQuickFolderCommand}"
+                                        CommandParameter="Documents"
+                                        IsEnabled="{Binding !IsScanning}" />
+                                <Button Classes="chip-btn"
+                                        Content="{Binding Loc[QuickUserProfile]}"
+                                        Command="{Binding SelectQuickFolderCommand}"
+                                        CommandParameter="Home"
+                                        IsEnabled="{Binding !IsScanning}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Card 2: Scan Mode & Options -->
+                    <Border Classes="card" Padding="14">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding Loc[SectionScanMode]}"
+                                       FontSize="11" FontWeight="Bold" LetterSpacing="0.8"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+
+                            <StackPanel Spacing="8" IsEnabled="{Binding !IsScanning}">
+                                <RadioButton Classes="mode-card"
+                                             GroupName="ScanModeGroup"
+                                             IsChecked="{Binding IsFolderSizeMode}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Loc[ModeFolderSize]}"
+                                                   FontWeight="SemiBold" FontSize="13"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <TextBlock Text="{Binding Loc[ModeFolderSizeDesc]}"
+                                                   FontSize="11" TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextMutedBrush}" />
+                                    </StackPanel>
+                                </RadioButton>
+
+                                <RadioButton Classes="mode-card"
+                                             GroupName="ScanModeGroup"
+                                             IsChecked="{Binding IsDeepScanMode}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Loc[ModeDeepScan]}"
+                                                   FontWeight="SemiBold" FontSize="13"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <TextBlock Text="{Binding Loc[ModeDeepScanDesc]}"
+                                                   FontSize="11" TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextMutedBrush}" />
+                                    </StackPanel>
+                                </RadioButton>
+
+                                <RadioButton Classes="mode-card"
+                                             GroupName="ScanModeGroup"
+                                             IsChecked="{Binding IsExtensionFilterMode}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Loc[ModeExtFilter]}"
+                                                   FontWeight="SemiBold" FontSize="13"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <TextBlock Text="{Binding Loc[ModeExtFilterDesc]}"
+                                                   FontSize="11" TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextMutedBrush}" />
+                                    </StackPanel>
+                                </RadioButton>
+                            </StackPanel>
+
+                            <Separator Background="{DynamicResource BorderSubtleBrush}" Margin="0,2" />
+
+                            <!-- Contextual Options -->
+                            <StackPanel Spacing="8" IsEnabled="{Binding !IsScanning}">
+                                <TextBlock Text="{Binding Loc[LabelOptions]}"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                                <CheckBox IsVisible="{Binding IsFolderSizeMode}"
+                                          IsChecked="{Binding IncludeFilesInFolderScan}"
+                                          Content="{Binding Loc[ChkIncludeFiles]}"
+                                          FontSize="12" />
+
+                                <CheckBox IsVisible="{Binding IsDeepScanMode}"
+                                          IsChecked="{Binding DeepScanIncludeFolders}"
+                                          Content="{Binding Loc[ChkDeepIncludeFolders]}"
+                                          FontSize="12" />
+
+                                <StackPanel IsVisible="{Binding IsExtensionFilterMode}" Spacing="6">
+                                    <TextBlock Text="{Binding Loc[LabelExtensions]}"
+                                               FontSize="12" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBox Text="{Binding ExtensionFilter}"
+                                             PlaceholderText="{Binding Loc[PlaceholderExtensions]}"
+                                             CornerRadius="0" FontSize="12" />
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="5" LineSpacing="5">
+                                        <Button Classes="chip-btn" Content=".mp4, .mkv"
+                                                Command="{Binding ApplyExtensionPresetCommand}"
+                                                CommandParameter=".mp4, .mkv" />
+                                        <Button Classes="chip-btn" Content=".zip, .rar, .7z"
+                                                Command="{Binding ApplyExtensionPresetCommand}"
+                                                CommandParameter=".zip, .rar, .7z" />
+                                        <Button Classes="chip-btn" Content=".png, .jpg"
+                                                Command="{Binding ApplyExtensionPresetCommand}"
+                                                CommandParameter=".png, .jpg" />
+                                        <Button Classes="chip-btn" Content=".log"
+                                                Command="{Binding ApplyExtensionPresetCommand}"
+                                                CommandParameter=".log" />
+                                        <Button Classes="chip-btn" Content=".cs"
+                                                Command="{Binding ApplyExtensionPresetCommand}"
+                                                CommandParameter=".cs" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Primary Start / Stop Scan Button -->
+                    <Button Command="{Binding StartOrStopScanCommand}"
+                            Classes="primary-scan"
+                            Classes.scanning="{Binding IsScanning}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon IsVisible="{Binding !IsScanning}"
+                                      Data="{StaticResource IconPlay}"
+                                      Foreground="White" Width="15" Height="15" />
+                            <PathIcon IsVisible="{Binding IsScanning}"
+                                      Data="{StaticResource IconStop}"
+                                      Foreground="White" Width="14" Height="14" />
+                            <TextBlock Text="{Binding ScanActionLabel}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Card 3: Export Report -->
+                    <Border Classes="card" Padding="14">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding Loc[SectionExport]}"
+                                       FontSize="11" FontWeight="Bold" LetterSpacing="0.8"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                <Button Grid.Column="0"
+                                        Click="ExportCsv_Click"
+                                        IsEnabled="{Binding HasResults}"
+                                        Classes="icon-btn"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <PathIcon Data="{StaticResource IconDownload}"
+                                                  Width="13" Height="13" />
+                                        <TextBlock Text="{Binding Loc[BtnExportCsv]}"
+                                                   FontSize="12" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Grid.Column="1"
+                                        Click="ExportTxt_Click"
+                                        IsEnabled="{Binding HasResults}"
+                                        Classes="icon-btn"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <PathIcon Data="{StaticResource IconDownload}"
+                                                  Width="13" Height="13" />
+                                        <TextBlock Text="{Binding Loc[BtnExportTxt]}"
+                                                   FontSize="12" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Grid.Column="2"
+                                        Click="ExportJson_Click"
+                                        IsEnabled="{Binding HasResults}"
+                                        Classes="icon-btn"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <PathIcon Data="{StaticResource IconDownload}"
+                                                  Width="13" Height="13" />
+                                        <TextBlock Text="{Binding Loc[BtnExportJson]}"
+                                                   FontSize="12" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <Button IsVisible="{Binding HasLastExportedPath}"
+                                    Command="{Binding OpenLastExportedLocationCommand}"
+                                    Classes="chip-btn"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconOpenExternal}" Width="13" Height="13" />
+                                    <TextBlock Text="{Binding Loc[BtnOpenExported]}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- RIGHT WORKSPACE -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+
+                <!-- Row 0: 4 KPI Cards -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                    <Border Grid.Column="0" Classes="kpi-card">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding Loc[KpiTotalSize]}"
+                                       FontSize="10" FontWeight="Bold" LetterSpacing="0.7"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock Text="{Binding TotalSizeDisplay}"
+                                       FontSize="20" FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentTextBrush}" />
+                            <TextBlock Text="{Binding KpiLargestSubtext}"
+                                       FontSize="11" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="kpi-card">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding Loc[KpiTotalItems]}"
+                                       FontSize="10" FontWeight="Bold" LetterSpacing="0.7"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock Text="{Binding TotalItemsCount}"
+                                       FontSize="20" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding KpiShowingSubtext}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="kpi-card">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding Loc[KpiFolders]}"
+                                       FontSize="10" FontWeight="Bold" LetterSpacing="0.7"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock Text="{Binding FolderCount}"
+                                       FontSize="20" FontWeight="Bold"
+                                       Foreground="{DynamicResource FolderBadgeFgBrush}" />
+                            <TextBlock Text="{Binding KpiDurationSubtext}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="kpi-card">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding Loc[KpiFiles]}"
+                                       FontSize="10" FontWeight="Bold" LetterSpacing="0.7"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock Text="{Binding FileCount}"
+                                       FontSize="20" FontWeight="Bold"
+                                       Foreground="{DynamicResource FileBadgeFgBrush}" />
+                            <TextBlock Text="{Binding TargetFolder}"
+                                       FontSize="11" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Row 1: Navigation + Search + Type Filter Bar -->
+                <Border Grid.Row="1" Classes="card" Padding="10">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+                        <Button Grid.Column="0"
+                                Command="{Binding GoUpFolderCommand}"
+                                IsEnabled="{Binding CanGoUpFolder}"
+                                Classes="icon-btn"
+                                ToolTip.Tip="{Binding Loc[BtnUpFolderTooltip]}">
+                            <PathIcon Data="{StaticResource IconArrowUp}" Width="16" Height="16" />
+                        </Button>
+
+                        <Button Grid.Column="1"
+                                Command="{Binding OpenInExplorerCommand}"
+                                CommandParameter="{Binding TargetFolder}"
+                                Classes="icon-btn"
+                                ToolTip.Tip="{Binding Loc[BtnOpenExplorerTooltip]}">
+                            <PathIcon Data="{StaticResource IconOpenExternal}" Width="15" Height="15" />
+                        </Button>
+
+                        <TextBox Grid.Column="2"
+                                 Text="{Binding SearchQuery}"
+                                 PlaceholderText="{Binding Loc[PlaceholderSearch]}"
+                                 CornerRadius="0"
+                                 FontSize="12">
+                            <TextBox.InnerLeftContent>
+                                <PathIcon Data="{StaticResource IconSearch}"
+                                          Foreground="{DynamicResource TextMutedBrush}"
+                                          Width="15" Height="15"
+                                          Margin="10,0,4,0" />
+                            </TextBox.InnerLeftContent>
+                        </TextBox>
+
+                        <Border Grid.Column="3"
+                                Background="{DynamicResource CardSubtleBrush}"
+                                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                                BorderThickness="1"
+                                CornerRadius="0"
+                                Padding="3">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <RadioButton Classes="segment-btn"
+                                             GroupName="TypeFilterGroup"
+                                             IsChecked="{Binding IsFilterAll}"
+                                             Content="{Binding Loc[FilterAll]}" />
+                                <RadioButton Classes="segment-btn"
+                                             GroupName="TypeFilterGroup"
+                                             IsChecked="{Binding IsFilterFolders}"
+                                             Content="{Binding Loc[FilterFolders]}" />
+                                <RadioButton Classes="segment-btn"
+                                             GroupName="TypeFilterGroup"
+                                             IsChecked="{Binding IsFilterFiles}"
+                                             Content="{Binding Loc[FilterFiles]}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Row 2: Live Scan Progress Banner -->
+                <Border Grid.Row="2"
+                        IsVisible="{Binding IsScanning}"
+                        Background="{DynamicResource AccentSoftBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}"
+                        BorderThickness="1"
+                        CornerRadius="0"
+                        Padding="14,10">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding ScanningStatusText}"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource AccentTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding ScanningItemsText}"
+                                       FontSize="12" FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentTextBrush}" />
+                        </Grid>
+                        <ProgressBar IsIndeterminate="True" Height="5" CornerRadius="0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Row 3: Results Table Card -->
+                <Border Grid.Row="3" Classes="card" ClipToBounds="True">
+                    <Grid RowDefinitions="Auto,*">
+                        <!-- Column Headers -->
+                        <Border Grid.Row="0"
+                                Background="{DynamicResource CardSubtleBrush}"
+                                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="12,8">
+                            <Grid ColumnDefinitions="62,*,155,112,132,90">
+                                <Button Grid.Column="0" Classes="col-header"
+                                        Command="{Binding SortByCommand}" CommandParameter="Type"
+                                        HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="{Binding Loc[ColType]}" />
+                                        <TextBlock Text="{Binding SortTypeIndicator}" Foreground="{DynamicResource AccentBrush}" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Grid.Column="1" Classes="col-header"
+                                        Command="{Binding SortByCommand}" CommandParameter="Name"
+                                        HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="{Binding Loc[ColName]}" />
+                                        <TextBlock Text="{Binding SortNameIndicator}" Foreground="{DynamicResource AccentBrush}" />
+                                    </StackPanel>
+                                </Button>
+
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding Loc[ColUsage]}"
+                                           FontSize="11" FontWeight="Bold"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           VerticalAlignment="Center" Margin="6,0" />
+
+                                <Button Grid.Column="3" Classes="col-header"
+                                        Command="{Binding SortByCommand}" CommandParameter="Size"
+                                        HorizontalAlignment="Right">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="{Binding SortSizeIndicator}" Foreground="{DynamicResource AccentBrush}" />
+                                        <TextBlock Text="{Binding Loc[ColSize]}" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Grid.Column="4" Classes="col-header"
+                                        Command="{Binding SortByCommand}" CommandParameter="Date"
+                                        HorizontalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="{Binding Loc[ColDate]}" />
+                                        <TextBlock Text="{Binding SortDateIndicator}" Foreground="{DynamicResource AccentBrush}" />
+                                    </StackPanel>
+                                </Button>
+
+                                <TextBlock Grid.Column="5"
+                                           Text="{Binding Loc[ColActions]}"
+                                           FontSize="11" FontWeight="Bold"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center" Margin="0,0,4,0" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Virtualized Items List -->
+                        <ListBox Grid.Row="1"
+                                 Classes="results-list"
+                                 ItemsSource="{Binding FilteredItems}"
+                                 SelectedItem="{Binding SelectedItem}"
+                                 IsVisible="{Binding HasFilteredResults}"
+                                 DoubleTapped="ResultsList_DoubleTapped">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:FileSystemItemInfo">
+                                    <Grid ColumnDefinitions="62,*,155,112,132,90" VerticalAlignment="Center">
+                                        <!-- Type Icon Badge -->
+                                        <Grid Grid.Column="0" HorizontalAlignment="Left" Margin="4,0,0,0">
+                                            <Border IsVisible="{Binding IsDirectory}"
+                                                    Background="{DynamicResource FolderBadgeBgBrush}"
+                                                    CornerRadius="0" Width="34" Height="34">
+                                                <PathIcon Data="{StaticResource IconFolder}"
+                                                          Foreground="{DynamicResource FolderBadgeFgBrush}"
+                                                          Width="18" Height="18" />
+                                            </Border>
+                                            <Border IsVisible="{Binding !IsDirectory}"
+                                                    Background="{DynamicResource FileBadgeBgBrush}"
+                                                    CornerRadius="0" Width="34" Height="34">
+                                                <PathIcon Data="{StaticResource IconFile}"
+                                                          Foreground="{DynamicResource FileBadgeFgBrush}"
+                                                          Width="17" Height="17" />
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- Name + Path -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontSize="13" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding FullPath}"
+                                                       FontSize="11"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource TextMutedBrush}" />
+                                        </StackPanel>
+
+                                        <!-- Visual Usage Bar + % -->
+                                        <Grid Grid.Column="2" ColumnDefinitions="*,46" VerticalAlignment="Center" Margin="6,0">
+                                            <ProgressBar Grid.Column="0"
+                                                         Classes="usage-bar"
+                                                         Classes.low="{Binding IsSizeLow}"
+                                                         Classes.med="{Binding IsSizeMed}"
+                                                         Classes.high="{Binding IsSizeHigh}"
+                                                         Classes.critical="{Binding IsSizeCritical}"
+                                                         Value="{Binding Percentage}"
+                                                         VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding PercentageText}"
+                                                       FontSize="11" FontWeight="Medium"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        </Grid>
+
+                                        <!-- Size Pill -->
+                                        <Border Grid.Column="3"
+                                                Classes="size-pill"
+                                                Classes.low="{Binding IsSizeLow}"
+                                                Classes.med="{Binding IsSizeMed}"
+                                                Classes.high="{Binding IsSizeHigh}"
+                                                Classes.critical="{Binding IsSizeCritical}"
+                                                VerticalAlignment="Center"
+                                                Margin="4,0">
+                                            <TextBlock Text="{Binding FormattedSize}"
+                                                       Classes="size-text"
+                                                       Classes.low="{Binding IsSizeLow}"
+                                                       Classes.med="{Binding IsSizeMed}"
+                                                       Classes.high="{Binding IsSizeHigh}"
+                                                       Classes.critical="{Binding IsSizeCritical}" />
+                                        </Border>
+
+                                        <!-- Created Date -->
+                                        <TextBlock Grid.Column="4"
+                                                   Text="{Binding CreatedDateText}"
+                                                   FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                                        <!-- Row Action Buttons -->
+                                        <StackPanel Grid.Column="5" Orientation="Horizontal"
+                                                    HorizontalAlignment="Right" Spacing="2" VerticalAlignment="Center">
+                                            <Button Classes="row-action-btn"
+                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).OpenInExplorerCommand}"
+                                                    CommandParameter="{Binding FullPath}"
+                                                    ToolTip.Tip="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).Loc[ActionOpenLocation]}">
+                                                <PathIcon Data="{StaticResource IconOpenExternal}" Width="14" Height="14" />
+                                            </Button>
+
+                                            <Button Classes="row-action-btn"
+                                                    Click="CopyRowPath_Click"
+                                                    ToolTip.Tip="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).Loc[ActionCopyPath]}">
+                                                <PathIcon Data="{StaticResource IconCopy}" Width="14" Height="14" />
+                                            </Button>
+
+                                            <Button Classes="row-action-btn"
+                                                    IsVisible="{Binding IsDirectory}"
+                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DrillIntoFolderCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip.Tip="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).Loc[ActionScanInside]}">
+                                                <PathIcon Data="{StaticResource IconDrillIn}" Width="15" Height="15" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- Empty State: Before First Scan -->
+                        <StackPanel Grid.Row="1"
+                                    IsVisible="{Binding ShowInitialEmptyState}"
+                                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Spacing="10" MaxWidth="420" Margin="24">
+                            <Border Background="{DynamicResource AccentSoftBrush}"
+                                    CornerRadius="0" Width="64" Height="64"
+                                    HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconRadar}"
+                                          Foreground="{DynamicResource AccentTextBrush}"
+                                          Width="32" Height="32" />
+                            </Border>
+                            <TextBlock Text="{Binding Loc[EmptyTitle]}"
+                                       FontSize="16" FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding Loc[EmptyHint]}"
+                                       FontSize="13" TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+
+                        <!-- Empty State: Filter yields 0 items -->
+                        <StackPanel Grid.Row="1"
+                                    IsVisible="{Binding ShowFilterEmptyState}"
+                                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Spacing="8" MaxWidth="380" Margin="24">
+                            <Border Background="{DynamicResource CardSubtleBrush}"
+                                    CornerRadius="0" Width="56" Height="56"
+                                    HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconSearch}"
+                                          Foreground="{DynamicResource TextMutedBrush}"
+                                          Width="26" Height="26" />
+                            </Border>
+                            <TextBlock Text="{Binding Loc[EmptyFilterTitle]}"
+                                       FontSize="15" FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding Loc[EmptyFilterHint]}"
+                                       FontSize="12" TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- BOTTOM STATUS BAR -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource HeaderBgBrush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="20,8">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Rectangle Width="8" Height="8" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding StatusMessage}"
+                               FontSize="12"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Text="FolderScannerUI • Avalonia"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
